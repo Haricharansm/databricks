@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.venv/
+engine/
+*.download
+*.zip
+.env
