@@ -4,12 +4,24 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 import json
+import os
+import re
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 import zipfile
 from core import MAX_BYTES, assess, convert, engine_status, validate_files
 
+from monitoring import RunService, Conflict
+
 ROOT = Path(__file__).parent
+
+class AppServer(ThreadingHTTPServer):
+    def __init__(self,address,handler,run_service=None):
+        super().__init__(address,handler)
+        self.runs=run_service or RunService(os.environ.get("MIGRATION_DB_PATH",str(ROOT/".data"/"migration.sqlite3")))
+    def server_close(self):
+        super().server_close()
+        self.runs.close()
 
 class Handler(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -25,9 +37,20 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
 
     def do_GET(self):
+        path=urlsplit(self.path).path
+        try:
+            if path=='/api/runs':
+                q=parse_qs(urlsplit(self.path).query)
+                return self.respond(200,self.server.runs.listing(limit=q.get('limit',[25])[0],offset=q.get('offset',[0])[0],status=q.get('status',[''])[0],query=q.get('q',[''])[0]))
+            match=re.fullmatch(r'/api/runs/([a-f0-9]{32})',path)
+            if match:
+                summary=parse_qs(urlsplit(self.path).query).get('summary',['0'])[0]=='1'
+                return self.respond(200,self.server.runs.get(match.group(1),not summary))
+        except KeyError as exc:return self.respond(404,{'error':str(exc)})
+        except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -43,6 +66,14 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            if self.path=='/api/runs':
+                return self.respond(202,self.server.runs.create(payload))
+            match=re.fullmatch(r'/api/runs/([a-f0-9]{32})/(convert|review|delete)',self.path)
+            if match:
+                run_id,action=match.groups()
+                if action=='convert':return self.respond(202,self.server.runs.start_conversion(run_id))
+                if action=='review':return self.respond(200,self.server.runs.review(run_id,payload))
+                return self.respond(200,self.server.runs.delete(run_id))
             if self.path == '/api/assess':
                 return self.respond(200, assess(validate_files(payload)))
             if self.path == '/api/convert':
@@ -76,6 +107,10 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
                 return
             return self.respond(404, {'error': 'Not found'})
+        except Conflict as exc:
+            return self.respond(409, {'error': str(exc)})
+        except KeyError as exc:
+            return self.respond(404, {'error': str(exc)})
         except (ValueError, UnicodeError) as exc:
             return self.respond(400, {'error': str(exc)})
         except RuntimeError as exc:
@@ -86,7 +121,8 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('--host', default='127.0.0.1'); parser.add_argument('--port', type=int, default=8000)
     args = parser.parse_args()
-    server = ThreadingHTTPServer((args.host, args.port), partial(Handler, directory=str(ROOT / 'static')))
+    server = AppServer((args.host, args.port), partial(Handler, directory=str(ROOT / 'static')))
     print(f'SQL Migration Accelerator: http://{args.host}:{args.port}', flush=True)
     try: server.serve_forever()
-    except KeyboardInterrupt: server.server_close()
+    except KeyboardInterrupt: pass
+    finally: server.server_close()

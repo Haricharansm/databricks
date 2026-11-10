@@ -30,6 +30,33 @@ Open http://127.0.0.1:8000 **on your computer**. On Windows, use `py` in place o
 
 Assessment is available without installing either conversion engine. The UI displays engine readiness separately. In a mixed batch, an available engine can convert its sources while the coverage report records sources blocked by the other engine.
 
+## Migration monitoring dashboard
+
+The monitor saves runs, source code, generated artifacts, assessment results, engine diagnostics, per-source review notes, and manual validation evidence in `.data/migration.sqlite3` on the computer running the server. This changes the earlier browser-only behavior: run data now persists until you delete it. The database and engine runtime files are ignored by Git and are never included in source downloads.
+
+- **Assess readiness** creates a saved run and queues its assessment. **Convert sources** starts background conversion for that assessed run. One worker processes sources sequentially, recording each source as queued, converting, converted, or blocked.
+- The page polls saved progress and restores the selected run after refresh. Closing a tab does not stop server-side work. Run history can be searched, filtered, paginated, and reopened to restore reports and downloadable artifacts.
+- Dashboard counts summarize all saved runs/source attempts, not deduplicated database objects. Run timestamps display in your browser's local timezone. Durations refer to the current/last phase (assessment or conversion).
+- Open a source's **Review notes & manual validation** panel to record pending/in-review/approved status, notes, and a manual validation result. Passed or failed validation requires evidence. A source must be converted and its review approved before you can mark it passed. Blocked sources cannot be approved or marked passed.
+- These validation results are **manual attestations**, not automatic Databricks checks. No workspace is connected. Saving a passed result does not remove SSIS notebook review gates, enable workflows, or set engine-generated `validated_on_databricks` to true.
+- Review changes have an event history and version checks to reject stale edits from another tab. This single local workspace has no authenticated reviewer identities or tamper-proof audit guarantees.
+- Use **New run from these sources** to create a separate attempt. Completed/failed runs are not silently overwritten or automatically retried. A server restart marks unfinished runs interrupted instead of claiming completion or replaying conversion.
+- **Delete saved run** removes a finished run's sources, outputs, and review records from the app database. Active runs cannot be deleted. This is not a secure-erasure guarantee for disk backups or previously exported files.
+- Exported readiness reports and bundles include the selected run's monitoring metadata and review history.
+
+Keep the database private: it can contain proprietary SQL, package contents, connection values carried through engine output, and notes. It is not encrypted by this app. To back it up, stop the server and copy `.data/migration.sqlite3`. `MIGRATION_DB_PATH` can select a different local database file. Run one server process per database; multi-process scheduling is not supported. Graceful server shutdown waits for queued work; force-stopped runs are recovered as interrupted on the next startup.
+
+### Monitoring API
+
+- `POST /api/runs` with the existing files payload creates a persistent assessment run (`202`).
+- `GET /api/runs` lists runs; `q`, `status`, `limit` (up to 50), and `offset` filter/page results. Global dashboard statistics accompany the list.
+- `GET /api/runs/<id>` restores sources, assessment, artifacts, and history. Add `?summary=1` to poll progress without transferring source/artifact bodies.
+- `POST /api/runs/<id>/convert` queues conversion of an assessed run (`202`).
+- `POST /api/runs/<id>/review` records a source's review/manual result with its current version.
+- `POST /api/runs/<id>/delete` deletes a non-active run.
+
+Existing synchronous `/api/assess`, `/api/convert`, and `/api/export` endpoints remain for compatibility; direct synchronous calls do not create monitored runs. The web interface uses the persistent run endpoints.
+
 ## Inputs and assessment
 
 ### SQL and stored procedures
@@ -84,18 +111,19 @@ If `databricks` is installed and `LAKEBRIDGE_TRANSPILER_CONFIG` points to an exi
 ```bash
 python -m unittest discover -s tests -v
 node --check static/app.js
+node --check static/monitor.js
 ```
 
-Tests cover SQL masking/line references, procedure metadata, SSIS inventory/constraints, unsafe XML/ISPAC inputs, output guards/paths, partial conversion, CLI behavior, LSP edits, HTTP routing/origin checks, and ZIP exports. Real Morpheus/BladeBridge integration tests skip when their engines are not installed. Browser testing on Linux exercised mixed-source assessment, actual engine conversion, artifact selection, ZIP download, and mobile layout. Databricks execution validation has not been performed.
+Tests cover SQL masking/line references, procedure metadata, SSIS inventory/constraints, unsafe XML/ISPAC inputs, output guards/paths, partial conversion, CLI behavior, LSP edits, HTTP routing/origin checks, and ZIP exports. Real Morpheus/BladeBridge integration tests skip when their engines are not installed. Browser testing on Linux exercised mixed-source assessment, actual engine conversion, artifact selection, ZIP download, and mobile layout. Monitoring tests also cover restart recovery, persistent artifacts/reviews, partial failures, evidence requirements, optimistic edit conflicts, pagination, and deletion. Browser testing verified refresh during conversion, restoration of saved reviews/artifacts, and history filtering. Databricks execution validation has not been performed.
 
 ## Runtime and limits
 
-This remains a local pilot app; the GitHub repository is a downloadable source distribution, not a hosted web service. The server binds to `127.0.0.1`. Team hosting requires a Python/Java-capable server behind authenticated TLS hosting; the included Python server does not provide user accounts or durable storage.
+This remains a local pilot app; the GitHub repository is a downloadable source distribution, not a hosted web service. The server binds to `127.0.0.1`. Team hosting requires a Python/Java-capable server behind authenticated TLS hosting; the included Python server does not provide user accounts; durable run data is stored in local SQLite.
 
 - Up to 50 expanded sources and 4 MB source text; ISPAC archives also cap total expanded contents at 4 MB / 200 entries.
-- One engine conversion at a time per process. Each engine batch/package has a 180-second limit; Morpheus uses a 768 MB JVM heap.
+- One background worker per server process; up to 20 active/queued runs. One engine conversion at a time per process. Each engine batch/package has a 180-second limit; Morpheus uses a 768 MB JVM heap.
 - Maximum combined SSIS/mixed output: 200 artifacts / 16 MB. Input filenames are unique, flat, and limited to letters, digits, spaces, underscores, dots, parentheses, and hyphens.
-- Sources stay in browser memory and are sent to the app server for processing. Temporary conversion files are removed after processing. Download results before refreshing.
+- Sources and generated results are saved in the local monitoring database. Temporary engine working files are removed after processing. Saved runs can be restored after refresh.
 - The app never executes uploaded SQL or generated notebook code; it invokes trusted engine programs to generate code.
 
 ## Upstream sources

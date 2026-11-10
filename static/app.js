@@ -14,7 +14,7 @@ function sync() {
   $('assess').disabled=busy||!files.length;
   const needsSQL=files.some(f=>/\.sql$/i.test(f.name));
   const needsSSIS=files.some(f=>/\.(dtsx|ispac)$/i.test(f.name));
-  $('convert').disabled=busy||!files.length||!report||!((needsSQL&&engine?.available)||(needsSSIS&&engine?.ssis?.available));
+  $('convert').disabled=busy||!files.length||!report||(window.monitor&&!window.monitor.canConvert())||!((needsSQL&&engine?.available)||(needsSSIS&&engine?.ssis?.available));
   $('download-report').disabled=busy||!report;
   $('download-bundle').disabled=busy||!conversion;
   ['sample','ssis-sample','browse','add-paste','paste-toggle','file-input'].forEach(id=>$(id).disabled=busy);
@@ -22,6 +22,7 @@ function sync() {
 }
 function invalidate() {
   revision++; report=null; conversion=null;
+  if(window.monitor)window.monitor.clearWorkspace();
   ['files','lines','high','findings'].forEach(k=>$('metric-'+k).textContent='—');
   $('type-summary').textContent='';$('assessment-results').replaceChildren();$('assessment-empty').hidden=false;
   $('output-select').replaceChildren();$('output-code').textContent='-- Converted SQL will appear here when Lakebridge is configured.';
@@ -113,25 +114,11 @@ const zone=$('dropzone');
 ['dragenter','dragover'].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();if(!busy)zone.classList.add('dragging');}));
 ['dragleave','drop'].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.remove('dragging');}));
 zone.addEventListener('drop',e=>readFiles(e.dataTransfer.files));
-$('assess').onclick=async()=>{
-  busy=true;sync();message('Assessing SQL source…');const started=revision;
-  try {const result=await api('/api/assess',{files});if(started!==revision)return;report=result;renderReport();message('Assessment complete. Review the findings before conversion.');$('readiness').scrollIntoView({behavior:'smooth'});}
-  catch(e){message(e.message,true);}finally{busy=false;sync();}
-};
-$('convert').onclick=async()=>{
-  busy=true;sync();message('Lakebridge is converting your sources. Each engine batch can take up to 3 minutes; keep this page open.');const started=revision;
-  try {
-    const result=await api('/api/convert',{files});if(started!==revision)return;conversion=result;
-    $('output-select').replaceChildren();conversion.files.forEach((f,i)=>{const option=el('option',f.name);option.value=String(i);$('output-select').append(option);});
-    $('output-code').textContent=conversion.files[0]?.sql||'';
-    $('conversion-warning').textContent=conversion.warning;
-    $('diagnostics').textContent=[conversion.coverage?JSON.stringify(conversion.coverage,null,2):'',conversion.diagnostics,conversion.conversion_errors].filter(Boolean).join('\n\n')||'No diagnostics returned.';
-    $('conversion-details').hidden=false;message(conversion.status);$('conversion').scrollIntoView({behavior:'smooth'});
-  }catch(e){conversion=null;message(e.message,true);}finally{busy=false;sync();}
-};
-$('download-report').onclick=()=>download('migration-readiness.json',JSON.stringify(report,null,2),'application/json');
+$('assess').onclick=()=>window.monitor.startAssessment();
+$('convert').onclick=()=>window.monitor.startConversion();
+$('download-report').onclick=()=>download('migration-readiness.json',JSON.stringify({...report,monitoring:window.monitor?.exportMetadata()},null,2),'application/json');
 $('download-bundle').onclick=async()=>{
-  busy=true;sync();try{const blob=await api('/api/export',{files:conversion.files,report:{assessment:report,conversion:{...conversion,files:conversion.files.map(f=>({name:f.name}))}}},true);download('migration-bundle.zip',blob);}
+  busy=true;sync();try{const blob=await api('/api/export',{files:conversion.files,report:{assessment:report,monitoring:window.monitor?.exportMetadata(),conversion:{...conversion,files:conversion.files.map(f=>({name:f.name}))}}},true);download('migration-bundle.zip',blob);}
   catch(e){message(e.message,true);}finally{busy=false;sync();}
 };
 async function health(){

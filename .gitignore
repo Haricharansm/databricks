@@ -5,3 +5,7 @@ engine/
 *.download
 *.zip
 .env
+
+.data/
+*.sqlite3*
+*.log
