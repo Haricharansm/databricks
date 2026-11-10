@@ -82,9 +82,9 @@ class APITests(unittest.TestCase):
         with self.assertRaises(HTTPError) as e:self.post('/api/assess',{},Origin='https://other.example')
         self.assertEqual(e.exception.code,403)
     def test_zip_has_safe_names_and_report(self):
-        with self.post('/api/export',{'files':[{'name':'../../x.sql','sql':'SELECT 1;'}],'report':{'ok':True}}) as response:
+        with self.post('/api/export',{'files':[{'name':'notebooks/pkg/x.py','sql':'# notebook'}],'report':{'ok':True}}) as response:
             with zipfile.ZipFile(io.BytesIO(response.read())) as z:
-                self.assertEqual(z.namelist(),['converted/001-x.sql','report.json'])
+                self.assertEqual(z.namelist(),['notebooks/pkg/x.py','report.json'])
                 self.assertEqual(json.loads(z.read('report.json')),{'ok':True})
 
 
@@ -101,12 +101,15 @@ class LSPTests(unittest.TestCase):
         from morpheus import convert_with_morpheus
         result=convert_with_morpheus([
             {'name':'simple.sql','sql':"SELECT TOP (2) [CustomerID], ISNULL([Region], 'Unknown') FROM [dbo].[Sales];"},
-            {'name':'clock.sql','sql':'SELECT GETDATE();'}],ROOT/'engine'/'morpheus.jar')
-        self.assertEqual(len(result['files']),2)
+            {'name':'clock.sql','sql':'SELECT GETDATE();'},
+            {'name':'proc.sql','sql':'CREATE PROCEDURE dbo.GetCustomers @minID INT AS BEGIN SELECT CustomerID FROM dbo.Customers WHERE CustomerID >= @minID; END;'}],ROOT/'engine'/'morpheus.jar')
+        self.assertEqual(len(result['files']),3)
         self.assertIn('LIMIT',result['files'][0]['sql'])
         self.assertIn('IFNULL',result['files'][0]['sql'])
         self.assertIn('CURRENT_TIMESTAMP',result['files'][1]['sql'])
         self.assertTrue(result['files'][1]['diagnostics'])
         self.assertFalse(result['validated_on_databricks'])
+        self.assertIn('PROCEDURE dbo.GetCustomers',result['files'][2]['sql'])
+        self.assertIn('LANGUAGE SQL',result['files'][2]['sql'])
 
 if __name__=='__main__':unittest.main()

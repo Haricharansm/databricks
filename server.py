@@ -52,14 +52,23 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError('Invalid export request.')
                 buffer = BytesIO()
                 with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
+                    seen={'report.json'}
                     for i, item in enumerate(payload['files']):
                         if not isinstance(item, dict) or not isinstance(item.get('sql'), str) or not isinstance(item.get('name'), str):
                             raise ValueError('Invalid export file.')
                         # Flat numbered names prevent archive path traversal and collisions.
                         name = Path(item['name'].replace('\\', '/')).name
-                        if not name.lower().endswith('.sql'):
-                            raise ValueError('Export accepts .sql files only.')
-                        archive.writestr(f'converted/{i+1:03d}-{name}', item['sql'])
+                        relative = item['name'].replace('\\', '/')
+                        from pathlib import PurePosixPath
+                        path = PurePosixPath(relative)
+                        if path.is_absolute() or '..' in path.parts or any(p.startswith('.') for p in path.parts):
+                            raise ValueError('Unsafe export path.')
+                        if path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md'):
+                            raise ValueError('Unsupported export artifact type.')
+                        if relative.casefold() in seen:
+                            raise ValueError('Duplicate export path.')
+                        seen.add(relative.casefold())
+                        archive.writestr(relative, item['sql'])
                     archive.writestr('report.json', json.dumps(payload.get('report', {}), indent=2))
                 body = buffer.getvalue()
                 self.send_response(200); self.send_header('Content-Type', 'application/zip')

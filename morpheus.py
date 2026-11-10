@@ -3,6 +3,8 @@
 Protocol verified against Lakebridge's LSPEngine; no workspace credentials required.
 """
 import json
+import os
+import signal
 from pathlib import Path
 import queue
 import shutil
@@ -12,16 +14,16 @@ import threading
 import time
 
 class Morpheus:
-    def __init__(self, jar, root):
+    def __init__(self, jar, root, command=None):
         self.deadline = time.monotonic() + 180
         self.inbox = queue.Queue(maxsize=1000)
         self.next_id = 0
         self.registered = False
         self.encoding = 'utf-16'
         self.log = tempfile.TemporaryFile(mode='w+')
-        self.process = subprocess.Popen([shutil.which('java'), '-Xmx768m', '-jar', str(jar)],
+        self.process = subprocess.Popen(command or [shutil.which('java'), '-Xmx768m', '-jar', str(jar)],
                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log,
-                                        cwd=str(root))
+                                        cwd=str(root), start_new_session=os.name != 'nt')
         self.reader = threading.Thread(target=self._read, daemon=True);self.reader.start()
 
     def _read(self):
@@ -30,7 +32,7 @@ class Morpheus:
                 headers = {}
                 while True:
                     line = self.process.stdout.readline()
-                    if not line:raise EOFError('Morpheus stopped unexpectedly.')
+                    if not line:raise EOFError('LSP engine stopped unexpectedly; verify the engine installation.')
                     if line == b'\r\n':break
                     key, value = line.decode('ascii').split(':', 1);headers[key.lower()] = value.strip()
                 size = int(headers['content-length'])
@@ -56,9 +58,9 @@ class Morpheus:
 
     def receive(self):
         if time.monotonic() >= self.deadline:
-            raise RuntimeError('Morpheus exceeded the 180-second time limit.')
+            raise RuntimeError('LSP engine exceeded the 180-second time limit.')
         try:message = self.inbox.get(timeout=max(.01,self.deadline-time.monotonic()))
-        except queue.Empty as exc:raise RuntimeError('Morpheus exceeded the 180-second time limit.') from exc
+        except queue.Empty as exc:raise RuntimeError('LSP engine exceeded the 180-second time limit.') from exc
         if isinstance(message,Exception):raise RuntimeError(str(message))
         if 'method' in message and 'id' in message:
             method = message['method']
@@ -79,14 +81,14 @@ class Morpheus:
         while True:
             message = self.receive()
             if message.get('id') == request_id and 'method' not in message:
-                if 'error' in message:raise RuntimeError('Morpheus: '+message['error'].get('message','Unknown engine error'))
+                if 'error' in message:raise RuntimeError('LSP engine: '+message['error'].get('message','Unknown engine error'))
                 return message.get('result')
 
-    def initialize(self,root):
+    def initialize(self,root,dialect='mssql',options=None):
         result = self.request('initialize',{
             'processId':None,'rootUri':Path(root).absolute().as_uri(),
             'capabilities':{'general':{'positionEncodings':['utf-16']},'workspace':{'applyEdit':False}},
-            'initializationOptions':{'remorph':{'source-dialect':'mssql'},'options':{},'custom':{}}})
+            'initializationOptions':{'remorph':{'source-dialect':dialect},'options':options or {},'custom':{}}})
         self.encoding = result.get('capabilities',{}).get('positionEncoding','utf-16')
         if self.encoding not in ('utf-16','utf-8','utf-32'):raise RuntimeError('Unsupported position encoding from engine.')
         self.send('initialized',{})
@@ -104,9 +106,15 @@ class Morpheus:
     def close(self):
         # Terminate the isolated process even when protocol startup or a request fails.
         if self.process.poll() is None:
-            self.process.terminate()
+            if os.name != 'nt':
+                try:os.killpg(self.process.pid, signal.SIGTERM)
+                except ProcessLookupError:pass
+            else:self.process.terminate()
             try:self.process.wait(timeout=5)
-            except subprocess.TimeoutExpired:self.process.kill();self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                if os.name != 'nt':os.killpg(self.process.pid, signal.SIGKILL)
+                else:self.process.kill()
+                self.process.wait(timeout=5)
         self.reader.join(timeout=2)
         for stream in (self.process.stdin,self.process.stdout):stream.close()
         self.log.close()

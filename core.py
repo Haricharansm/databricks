@@ -58,29 +58,13 @@ RULES = [
 ]
 
 def validate_files(payload):
-    files = payload.get('files') if isinstance(payload, dict) else None
-    if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES:
-        raise ValueError(f'Upload between 1 and {MAX_FILES} SQL files.')
-    total = 0
-    clean = []
-    seen = set()
-    for item in files:
-        if not isinstance(item, dict) or not isinstance(item.get('name'), str) or not isinstance(item.get('sql'), str):
-            raise ValueError('Each file requires a name and SQL text.')
-        name, sql = item['name'], item['sql']
-        if not re.fullmatch(r'[\w .()-]{1,120}\.sql', name, re.I) or name.startswith('.'):
-            raise ValueError('Use plain .sql filenames without folders (maximum 124 characters).')
-        if name.casefold() in seen:
-            raise ValueError('File names must be unique.')
-        if not sql.strip() or '\0' in sql:
-            raise ValueError(f'{name}: SQL must be nonempty UTF-8 text without NUL characters.')
-        total += len(sql.encode('utf-8'))
-        if total > MAX_BYTES:
-            raise ValueError('SQL upload exceeds the 4 MB total limit.')
-        seen.add(name.casefold()); clean.append({'name': name, 'sql': sql})
-    return clean
+    from sources import normalize_files
+    return normalize_files(payload)
+
 
 def assess_file(item):
+    if item['name'].lower().endswith('.dtsx'):
+        return assess_ssis(item)
     sql = item['sql']; masked = mask_sql(sql)
     findings = []
     newlines = [m.start() for m in re.finditer('\n', masked)]
@@ -95,21 +79,47 @@ def assess_file(item):
                              'count': count, 'lines': sorted(line_numbers)})
     high = sum(f['severity'] == 'high' for f in findings)
     medium = sum(f['severity'] == 'medium' for f in findings)
+    from legacy import sql_inventory
+    metadata = sql_inventory(sql)
+    outputs=sum(p['output'] for proc in metadata['procedures'] for p in proc['parameters'])
+    if outputs:
+        findings.append({'code':'procedure-output-parameters','severity':'high','title':'Procedure output parameters',
+            'action':'Verify IN/OUT parameter modes, caller bindings, data types, and target-runtime support.',
+            'count':outputs,'lines':[p['line'] for p in metadata['procedures'] if any(v['output'] for v in p['parameters'])]})
+        high+=1
     complexity = 'High' if high else 'Medium' if medium else 'Low'
-    return {'name': item['name'], 'lines': len(sql.splitlines()),
+    return {**metadata, 'name': item['name'], 'lines': len(sql.splitlines()),
             'statement_estimate': len([s for s in re.split(r';|(?im:^\s*GO\s*$)', masked) if s.strip()]),
             'complexity': complexity, 'review_required': bool(findings), 'findings': findings,
             'status': 'Manual review' if high else 'Review findings' if findings else 'No rules matched'}
 
+def assess_ssis(item):
+    from ssis import inventory
+    info=inventory(item);findings=list(info['findings'])
+    for i,statement in enumerate(info['embedded_sql']):
+        if statement['source_type'] not in ('','0'):continue
+        scan=assess_file({'name':'embedded.sql','sql':statement['sql']})
+        for finding in scan['findings']:
+            findings.append({**finding,'code':f"embedded-{i}-"+finding['code'],
+                'title':f"Embedded SQL {i+1}: "+finding['title'],
+                'location':'Embedded SQL line numbers; not XML line numbers'})
+    high=any(f['severity']=='high' for f in findings)
+    return {'name':item['name'],'object_type':'ssis_package','lines':len(item['sql'].splitlines()),
+            'complexity':'High' if high else 'Medium','review_required':True,
+            'status':'Experimental conversion — manual review','findings':findings,
+            'package':{k:v for k,v in info.items() if k not in ('findings','embedded_sql')},
+            'embedded_sql_count':len(info['embedded_sql'])}
+
+
 def assess(files):
     results = [assess_file(f) for f in files]
-    return {'assessment_method': 'Heuristic SQL source scan; not Lakebridge Analyzer or a live database assessment.',
+    return {'assessment_method': 'Heuristic SQL/procedure scan and SSIS XML inventory; not Lakebridge Analyzer or a live database assessment.',
             'limitations': 'No database inventory, data volumes, query history, resolved dependency graph, or execution validation. No matching rules does not establish migration readiness.',
-            'summary': {'files': len(results), 'lines': sum(r['lines'] for r in results),
+            'summary': {'files': len(results), 'ssis_packages':sum(r.get('object_type')=='ssis_package' for r in results), 'stored_procedures':sum(len(r.get('procedures',[])) for r in results), 'lines': sum(r['lines'] for r in results),
                         'high_complexity': sum(r['complexity'] == 'High' for r in results),
                         'findings': sum(len(r['findings']) for r in results)}, 'files': results}
 
-def engine_status():
+def sql_engine_status():
     cli = shutil.which('databricks')
     config = os.environ.get('LAKEBRIDGE_TRANSPILER_CONFIG', '')
     configured = bool(config and Path(config).is_file())
@@ -125,7 +135,7 @@ def engine_status():
                        'Conversion needs the Databricks CLI, Lakebridge with Morpheus installed, and LAKEBRIDGE_TRANSPILER_CONFIG set to its config file.',
             'target_validation': False}
 
-def convert(files):
+def convert_sql(files):
     state = engine_status()
     if not state['available']:
         raise RuntimeError(state['message'])
@@ -175,3 +185,15 @@ def convert(files):
                     'warning': 'Generated SQL has not been executed or validated on Databricks. Review all engine diagnostics and reconcile results before use. Output file count can differ from input; inspect coverage.'}
     finally:
         ENGINE_LOCK.release()
+
+
+def engine_status():
+    from bladebridge import status
+    return {**sql_engine_status(),'ssis':status()}
+
+def convert(files):
+    # Retain direct SQL API behavior; mixed uploads add explicit coverage and SSIS artifacts.
+    if not any(f['name'].lower().endswith('.dtsx') for f in files):
+        return convert_sql(files)
+    from legacy import convert_mixed
+    return convert_mixed(files)
