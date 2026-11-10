@@ -9,6 +9,7 @@ import sqlite3
 import threading
 import uuid
 from core import assess, convert, validate_files
+from validation_store import ValidationStore, SCHEMA as VALIDATION_SCHEMA
 
 ACTIVE=('uploaded','assessing','queued','converting')
 
@@ -19,7 +20,7 @@ def seconds(start,end):
 
 class Conflict(ValueError):pass
 
-class RunService:
+class RunService(ValidationStore):
     def __init__(self,path):
         self.path=Path(path);self.path.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
         self.lock=threading.RLock();self.executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='migration')
@@ -41,6 +42,7 @@ class RunService:
                 created_at TEXT NOT NULL, source TEXT, message TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS run_time ON runs(created_at);
             ''')
+            db.executescript(VALIDATION_SCHEMA)
             # Work is never automatically replayed after a crash: conversion may have produced incomplete outputs.
             interrupted=db.execute("SELECT id FROM runs WHERE status IN ('uploaded','assessing','queued','converting')").fetchall()
             for row in interrupted:

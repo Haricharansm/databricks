@@ -70,6 +70,7 @@ function renderDetail(run,force=false){
   if(!force&&focused)return;
   lastUpdated=run.id+run.updated_at;
   if(selectedRun?.id===run.id)selectedRun={...selectedRun,...run};else selectedRun=run;
+  if(window.workbench)window.workbench.selectRun(selectedRun);
   $('run-detail').hidden=false;$('run-title').textContent=run.label;
   $('run-meta').textContent=`Run ${run.id.slice(0,8)} · created ${timestamp(run.created_at)} · ${stateLabel(run.status)} · phase duration ${duration(run.duration_seconds)}`;
   const progress=$('run-progress');progress.replaceChildren();
@@ -133,10 +134,10 @@ $('runs-prev').onclick=()=>{offset=Math.max(0,offset-25);refresh();};$('runs-nex
 $('new-run').onclick=()=>{const saved=selectedRun?.files;if(saved)files=saved.map(f=>({...f}));clearWorkspace();invalidate();renderFiles();message('Ready for a new run. Select Assess readiness to save a separate run.');$('workspace').scrollIntoView({behavior:'smooth'});};
 $('delete-run').onclick=async()=>{
   if(!selectedId||!confirm('Delete this saved run, including its source code, artifacts, and review history?'))return;
-  try{await api('/api/runs/'+selectedId+'/delete',{});if(currentId===selectedId){clearWorkspace();invalidate();renderFiles();}selectedId=null;selectedRun=null;lastUpdated='';$('run-detail').hidden=true;offset=0;await refresh();}
+  try{await api('/api/runs/'+selectedId+'/delete',{});if(currentId===selectedId){clearWorkspace();invalidate();renderFiles();}selectedId=null;selectedRun=null;if(window.workbench)window.workbench.selectRun(null);lastUpdated='';$('run-detail').hidden=true;offset=0;await refresh();}
   catch(error){$('monitor-error').textContent=error.message;}
 };
-window.monitor={startAssessment,startConversion,clearWorkspace,exportMetadata:()=>selectedRun?{id:selectedRun.id,label:selectedRun.label,status:selectedRun.status,created_at:selectedRun.created_at,updated_at:selectedRun.updated_at,sources:selectedRun.sources,events:selectedRun.events,validation_method:'Manual attestations; no Databricks execution connection.'}:null,canConvert:()=>Boolean(currentId&&selectedRun?.id===currentId&&selectedRun.status==='assessed')};
+window.monitor={selectedRun:()=>selectedRun,startAssessment,startConversion,clearWorkspace,exportMetadata:()=>selectedRun?{id:selectedRun.id,label:selectedRun.label,status:selectedRun.status,created_at:selectedRun.created_at,updated_at:selectedRun.updated_at,sources:selectedRun.sources,events:selectedRun.events,validation_method:'Manual attestations; no Databricks execution connection.'}:null,canConvert:()=>Boolean(currentId&&selectedRun?.id===currentId&&selectedRun.status==='assessed')};
 (async()=>{await refresh();let id;try{id=localStorage.getItem('crosslake.currentRun');}catch{}if(id)openRun(id).catch(error=>{pointer(null);$('monitor-error').textContent=error.message;});})();
 setInterval(()=>{if(!document.hidden)refresh();},5000);
 })();

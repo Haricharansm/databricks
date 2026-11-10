@@ -57,6 +57,58 @@ Keep the database private: it can contain proprietary SQL, package contents, con
 
 Existing synchronous `/api/assess`, `/api/convert`, and `/api/export` endpoints remain for compatibility; direct synchronous calls do not create monitored runs. The web interface uses the persistent run endpoints.
 
+## Validation workbench: SQL and stored procedures
+
+The first validation workbench compares **result exports supplied by you**. It does not connect to SQL Server/Databricks, execute queries, or independently verify export provenance. A passing comparison establishes a match only for the supplied snapshots and declared rules; it is not proof of complete migration correctness. SSIS pipeline validation, procedure return codes/output parameters, multiple result sets, side effects, transaction behavior, and performance validation are not automated in this version.
+
+### Suggested workflow
+
+1. Open a saved migration run in the monitor after its active phase finishes. The workbench offers SQL files and stored procedures from that run.
+2. Create a test case: select its source, give it a name and scenario, and optionally record the SQL Server/Databricks queries or procedure calls and a JSON object of parameter values. Query text is metadata only and is never executed.
+3. Declare result columns using exact exported names, explicit types, nullability, and matching rules. Save the case before comparing. The **Load demo case** button supplies clearly labeled synthetic fixtures so you can learn the interface without database access.
+4. Run both queries manually against aligned, representative fixtures or consistent snapshots. Export their result sets as UTF-8 CSV or JSON. Preserve decimal precision, NULL versus empty-string distinctions, duplicate rows, and any meaningful ordering.
+5. Import or paste the SQL Server expected results and Databricks actual results. Record both export/query references plus execution evidence: fixture identity, parameters, export times, workspace/job references, and known limitations. These are manually supplied references, not authenticated execution evidence.
+6. Select **Compare uploaded results**. Inspect individual checks, mismatch samples, and the recorded definition/evidence. Download the JSON comparison report.
+7. Add cases for normal inputs, no rows, nulls, duplicates, decimal boundaries, date/time boundaries, and unsupported-feature rewrites. Each procedure result set should have a separate case. Review side effects and procedural semantics separately.
+
+### Matching rules
+
+| Mode | Behavior |
+| --- | --- |
+| Unordered | Exact normalized rows compared as multisets. Row order is ignored; duplicate multiplicity is preserved. Nonzero numeric tolerance is rejected. |
+| Ordered | Rows align by position. Use deterministic source/target ordering. Explicit absolute numeric tolerances can be set per column. |
+| Keyed | Rows align by declared unique, non-NULL keys. Duplicate/null keys fail the comparison. Keys always compare exactly; non-key numeric columns can have explicit absolute tolerances. |
+
+Column names and field sets must match exactly, including case. Header order can differ because columns map by name. Every row must have the declared fields. Supported declared types are `string`, `integer`, `decimal`, `boolean`, `date`, and `timestamp`. These check exported values against the declared types; they do **not** inspect actual database column metadata.
+
+- Strings remain case-sensitive and whitespace-sensitive. Numeric values are not implicitly converted into strings.
+- Numbers use decimal arithmetic, not binary floating-point comparison. Integers must be integral. Numeric text can use standard decimal/scientific notation; non-finite values and excessively large numbers/exponents are rejected.
+- CSV uses the explicit NULL token `\N` by default. Empty text remains an empty string. You can deliberately change the token, including selecting an empty token when that matches an export convention; doing so cannot recover empty-string/NULL distinctions already lost in an export.
+- JSON uses actual `null`; a string containing a backslash followed by N is not treated as NULL. Duplicate JSON object keys and NaN/Infinity constants are rejected.
+- Boolean values are true/false (JSON booleans or true/false text). Dates require `YYYY-MM-DD`. Timestamps require an explicit UTC offset or `Z`, normalize to UTC, and support at most six fractional digits. Naive timestamps and higher precision are rejected rather than silently assigned a timezone or truncated.
+- JSON accepts a nonempty array of row objects or an explicit envelope such as `{"columns":["id","amount"],"rows":[]}`. Use the envelope for empty results; plain `[]` cannot establish a schema. CSV always requires headers.
+
+Reports include row-count, schema, declared-type, null-count, key-quality (when applicable), and value checks. Exact duplicate-row counts are reported separately. Up to 20 mismatch samples are shown with a total value-mismatch count. Structural/type failures can stop value comparison; inspect earlier failed checks even when the value mismatch count is zero. `error` means the input could not be compared, not that a query execution failed.
+
+### Definitions, history, and data storage
+
+Each case belongs to one source/run. Saving edits creates a new version; previous comparisons retain their original definition and result. The current summary marks old-version comparisons as superseded rather than treating them as a pass for new rules. Version checks reject stale saves/comparisons from another tab.
+
+Each attempt stores both raw result snapshots, input formats/hashes, the definition snapshot, source/run artifact hashes, manually supplied evidence, timestamp, and result in the existing local database. Reports are immutable through the app API. **Restore recorded inputs** reuses inputs from a historical attempt, while the next comparison applies the currently saved definition. The latest 50 comparisons per case are listed in the UI.
+
+A matched comparison does not change source review, manually recorded validation status, notebook execution gates, `validated_on_databricks`, or deployment readiness. Comparison reports download separately from migration artifact bundles. Their mismatch samples, optional query text, and evidence can contain sensitive information; raw datasets remain in the local database unless you restore/export them yourself. Deleting the owning migration run cascades to its cases and comparison records.
+
+Limits: 100 columns, 10,000 rows and 2 MB per result set; 100 cases and 500 saved attempts per run. No sampling or truncation is used to make a dataset pass. Database disk usage grows with saved snapshots; delete unwanted runs and maintain appropriate local access/backup policies. Existing local databases gain the validation tables automatically on server startup; no additional packages are required.
+
+### Validation API
+
+- `GET /api/runs/<run>/validation`: case list and current-definition comparison summary.
+- `POST /api/runs/<run>/validation/cases`: create a case.
+- `GET /api/runs/<run>/validation/cases/<case>`: definition and latest 50 attempt summaries.
+- `POST /api/runs/<run>/validation/cases/<case>`: save a new definition version using the current `version`.
+- `POST /api/runs/<run>/validation/cases/<case>/compare`: compare `expected` and `actual` datasets (`format` and `content`), with current `version`, `expected_ref`, `actual_ref`, and `evidence`.
+- `GET /api/runs/<run>/validation/attempts/<attempt>`: immutable report and whether its definition has been superseded. Add `?inputs=1` to restore the recorded raw inputs.
+
 ## Inputs and assessment
 
 ### SQL and stored procedures
@@ -112,9 +164,10 @@ If `databricks` is installed and `LAKEBRIDGE_TRANSPILER_CONFIG` points to an exi
 python -m unittest discover -s tests -v
 node --check static/app.js
 node --check static/monitor.js
+node --check static/validation.js
 ```
 
-Tests cover SQL masking/line references, procedure metadata, SSIS inventory/constraints, unsafe XML/ISPAC inputs, output guards/paths, partial conversion, CLI behavior, LSP edits, HTTP routing/origin checks, and ZIP exports. Real Morpheus/BladeBridge integration tests skip when their engines are not installed. Browser testing on Linux exercised mixed-source assessment, actual engine conversion, artifact selection, ZIP download, and mobile layout. Monitoring tests also cover restart recovery, persistent artifacts/reviews, partial failures, evidence requirements, optimistic edit conflicts, pagination, and deletion. Browser testing verified refresh during conversion, restoration of saved reviews/artifacts, and history filtering. Databricks execution validation has not been performed.
+Tests cover SQL masking/line references, procedure metadata, SSIS inventory/constraints, unsafe XML/ISPAC inputs, output guards/paths, partial conversion, CLI behavior, LSP edits, HTTP routing/origin checks, and ZIP exports. Real Morpheus/BladeBridge integration tests skip when their engines are not installed. Browser testing on Linux exercised mixed-source assessment, actual engine conversion, artifact selection, ZIP download, and mobile layout. Monitoring tests also cover restart recovery, persistent artifacts/reviews, partial failures, evidence requirements, optimistic edit conflicts, pagination, and deletion. Browser testing verified refresh during conversion, restoration of saved reviews/artifacts, and history filtering. Validation-workbench tests cover exact decimal handling, row multiplicity, NULL/empty distinctions, ordered/keyed comparisons, explicit tolerances, timezone rules, invalid inputs, immutable version history, evidence requirements, run scoping, and persistence. Browser testing covered case creation/versioning, matching/mismatching CSV/JSON results, refresh restoration, file import, historical report download, and mobile layout. Databricks execution validation has not been performed.
 
 ## Runtime and limits
 

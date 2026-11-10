@@ -42,6 +42,14 @@ class Handler(SimpleHTTPRequestHandler):
             if path=='/api/runs':
                 q=parse_qs(urlsplit(self.path).query)
                 return self.respond(200,self.server.runs.listing(limit=q.get('limit',[25])[0],offset=q.get('offset',[0])[0],status=q.get('status',[''])[0],query=q.get('q',[''])[0]))
+            validation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/validation(?:/(cases|attempts)/([a-f0-9]{32}))?',path)
+            if validation:
+                run_id,kind,item_id=validation.groups()
+                if kind=='cases':return self.respond(200,self.server.runs.validation_case(run_id,item_id))
+                if kind=='attempts':
+                    include=parse_qs(urlsplit(self.path).query).get('inputs',['0'])[0]=='1'
+                    return self.respond(200,self.server.runs.validation_attempt(run_id,item_id,include))
+                return self.respond(200,self.server.runs.validation_cases(run_id))
             match=re.fullmatch(r'/api/runs/([a-f0-9]{32})',path)
             if match:
                 summary=parse_qs(urlsplit(self.path).query).get('summary',['0'])[0]=='1'
@@ -50,7 +58,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -66,6 +74,11 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            validation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/validation/cases(?:/([a-f0-9]{32})(/compare)?)?',self.path)
+            if validation:
+                run_id,case_id,action=validation.groups()
+                if action:return self.respond(201,self.server.runs.evaluate_case(run_id,case_id,payload))
+                return self.respond(200 if case_id else 201,self.server.runs.save_case(run_id,payload,case_id))
             if self.path=='/api/runs':
                 return self.respond(202,self.server.runs.create(payload))
             match=re.fullmatch(r'/api/runs/([a-f0-9]{32})/(convert|review|delete)',self.path)
