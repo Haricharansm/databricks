@@ -12,6 +12,7 @@ import zipfile
 from core import MAX_BYTES, assess, convert, engine_status, validate_files
 
 from monitoring import RunService, Conflict
+from databricks_settings import DatabricksSettings
 
 ROOT = Path(__file__).parent
 
@@ -19,9 +20,12 @@ class AppServer(ThreadingHTTPServer):
     def __init__(self,address,handler,run_service=None):
         super().__init__(address,handler)
         self.runs=run_service or RunService(os.environ.get("MIGRATION_DB_PATH",str(ROOT/".data"/"migration.sqlite3")))
+        self.databricks=DatabricksSettings(self.runs)
     def server_close(self):
         super().server_close()
-        self.runs.close()
+        if hasattr(self,'databricks'):
+            with self.databricks.lock:self.databricks.session_token=None
+        if hasattr(self,'runs'):self.runs.close()
 
 class Handler(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -36,9 +40,18 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(status); self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
 
+    def trusted_api_host(self):
+        port=self.server.server_address[1]
+        allowed={f'127.0.0.1:{port}',f'localhost:{port}',f'[::1]:{port}'}
+        if port==80:allowed.update(('127.0.0.1','localhost','[::1]'))
+        allowed.update(value.strip().lower() for value in os.environ.get('ACCELERATOR_ALLOWED_HOSTS','').split(',') if value.strip())
+        return self.headers.get('Host','').lower() in allowed
+
     def do_GET(self):
         path=urlsplit(self.path).path
+        if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
+            if path=='/api/databricks/settings':return self.respond(200,self.server.databricks.public())
             if path=='/api/runs':
                 q=parse_qs(urlsplit(self.path).query)
                 return self.respond(200,self.server.runs.listing(limit=q.get('limit',[25])[0],offset=q.get('offset',[0])[0],status=q.get('status',[''])[0],query=q.get('q',[''])[0]))
@@ -58,11 +71,12 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
     def do_POST(self):
+        if self.path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         # Fetch uses application/json and a custom header: reject cross-origin form submissions.
         if self.headers.get('Content-Type', '').split(';')[0] != 'application/json' or self.headers.get('X-Accelerator-Request') != '1':
             return self.respond(415, {'error': 'Use the application JSON API.'})
@@ -74,6 +88,14 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            if self.path.startswith('/api/databricks/'):
+                actions={'/api/databricks/settings':self.server.databricks.save,
+                         '/api/databricks/test-workspace':self.server.databricks.test_workspace,
+                         '/api/databricks/warehouses':self.server.databricks.warehouses,
+                         '/api/databricks/test-warehouse':self.server.databricks.test_warehouse,
+                         '/api/databricks/forget-credential':self.server.databricks.forget}
+                if self.path not in actions:return self.respond(404,{'error':'Not found'})
+                return self.respond(200,actions[self.path](payload))
             validation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/validation/cases(?:/([a-f0-9]{32})(/compare)?)?',self.path)
             if validation:
                 run_id,case_id,action=validation.groups()

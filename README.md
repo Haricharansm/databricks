@@ -30,6 +30,55 @@ Open http://127.0.0.1:8000 **on your computer**. On Windows, use `py` in place o
 
 Assessment is available without installing either conversion engine. The UI displays engine readiness separately. In a mixed batch, an available engine can convert its sources while the coverage report records sources blocked by the other engine.
 
+## Databricks settings and connection tests
+
+The **Databricks settings** section configures workspace access and SQL warehouse defaults. It is a connection setup/probe integration: it does not execute migration queries, deploy notebooks/jobs, collect live job statuses, or replace uploaded-result validation.
+
+### Configure your workspace
+
+1. Start the app and open **Databricks settings** in its sidebar.
+2. Enter the base workspace URL from your Databricks browser session, such as `https://dbc-<workspace>.cloud.databricks.com`. Remove editor paths, `?o=...` query parameters, and fragments. An account-console URL is not a workspace URL.
+3. Select one authentication method below. Enter credentials only in your local app or server environment, never in chat, source files, or GitHub.
+4. Select **Save settings**, then **Test workspace connection**. This reads the current workspace identity through the workspace SCIM `Me` API and does not start a warehouse or run SQL.
+5. Select **Load SQL warehouses**. Choose a visible warehouse or paste its ID, then save settings again. Listing warehouses does not start compute. If copying an HTTP path such as `/sql/1.0/warehouses/<id>`, enter only the final warehouse ID.
+6. Optionally set a catalog and schema. Blank values use the workspace/warehouse defaults; these fields do not create objects or rewrite converted code.
+7. To verify SQL access, explicitly check the compute-consent box and select **Run fixed SELECT 1 test**. This may start a stopped warehouse and use compute. The only submitted statement is `SELECT 1 AS connection_test`; uploaded SQL and validation-case query text are never submitted.
+
+The warehouse test requests a 10-second inline wait with cancellation on timeout, a one-row/1 KB result bound, and verifies that the returned scalar equals 1. Pending tests receive a best-effort cancellation request when a statement ID is available. Canceled/pending tests are labeled not verified; cold warehouses may need warm-up before retrying. Check query history if cancellation or verification is incomplete. Workspace authentication, warehouse permission, and migrated-query correctness are separate checks.
+
+Databricks Free Edition support depends on the authentication methods, SQL warehouse access, and APIs enabled for your account. If personal access tokens are disabled, use a supported CLI OAuth login. No live workspace account was available during development; API behavior was tested with mocked Databricks responses, not a real account.
+
+### Authentication choices
+
+| Method | Configuration and lifetime |
+| --- | --- |
+| Personal access token | Enter in the password field. It is sent to the local app server, held in memory, and never returned in settings responses or written to SQLite. The input clears after saving. Re-enter after restarting the server. A blank field preserves an existing token only for the same workspace and authentication mode. |
+| Existing CLI OAuth login | Install the official Databricks CLI on the machine running this app and run `databricks auth login --host <workspace-url>` there. An optional profile can be selected in the UI. The app invokes `databricks auth token --host ... [--profile ...]` to obtain a token for a test; it does not start an interactive login or persist token output. CLI availability is not proof that a login is valid. |
+| Server environment token | Set `DATABRICKS_HOST` and `DATABRICKS_TOKEN` in the app server process environment before starting it. The saved host must match the environment host before that token can be used. The token value is not displayed or copied into the database; the workspace URL is non-secret metadata and is saved normally. The app does not automatically load `.env` files. |
+
+PAT creation and CLI OAuth availability depend on workspace policy and your permissions. Use the least-privileged account that can access the workspace and intended SQL warehouse. A valid credential can still receive a permission error when listing or using warehouses.
+
+Only workspace URL, authentication-mode/profile names, warehouse ID, optional catalog/schema, settings revision, and sanitized test results are stored in the existing local database. Identity names in successful test results are non-secret metadata but can contain personal information. Tokens are not placed in browser storage, query strings, reports, source ZIPs, or GitHub updates. Changing the saved workspace or authentication mode clears the old session token. **Clear session credential** removes it and selects session-token mode; it does not revoke tokens or erase credentials managed by your environment or Databricks CLI.
+
+Settings saves reset cached test outcomes. Displayed test outcomes are historical observations with timestamps, not a guarantee that a credential is still valid. After a restart, a historical successful test can remain visible while the current session has no token. Version checks reject stale edits and tests when settings change concurrently.
+
+### Network and local hosting boundary
+
+Requests use HTTPS with normal TLS verification and inherited proxy/CA settings. Supported workspace suffixes are `cloud.databricks.com`, `azuredatabricks.net`, and `gcp.databricks.com`; arbitrary hosts, IP addresses, custom ports, URL credentials, account-console URLs, and redirect targets are rejected. Government/custom workspace domains require a reviewed allowlist extension. Network, VPN, and private-DNS access still need to work from the app server.
+
+The app's API accepts localhost/loopback Host headers for its listening port by default to reduce DNS-rebinding exposure. For an authenticated TLS reverse proxy, `ACCELERATOR_ALLOWED_HOSTS` can add comma-separated, exact Host-header values, such as `migration.example.com`; include a port when the browser Host header includes one. This setting is not an authentication mechanism. The included local app has no user accounts or per-user credential isolation: run it on a trusted computer. Shared deployment requires an authenticated gateway, TLS, appropriate access controls, and a reviewed credential model before enabling it for a team.
+
+### Settings API
+
+- `GET /api/databricks/settings`: non-secret settings, credential-presence indicators, and last test outcomes.
+- `POST /api/databricks/settings`: save metadata and optional session `token`, using the current `revision`.
+- `POST /api/databricks/test-workspace`: verify current identity using the saved `revision`.
+- `POST /api/databricks/warehouses`: list visible warehouse metadata using the saved `revision`.
+- `POST /api/databricks/test-warehouse`: fixed SQL probe; requires current `revision` and `allow_compute: true`.
+- `POST /api/databricks/forget-credential`: clear the in-memory credential using the current `revision`.
+
+All action responses are sanitized. Authentication failures, permission denials, unsupported APIs, network problems, and incomplete SQL probes are surfaced without returning raw upstream error bodies or CLI output. No token value is returned by any endpoint.
+
 ## Migration monitoring dashboard
 
 The monitor saves runs, source code, generated artifacts, assessment results, engine diagnostics, per-source review notes, and manual validation evidence in `.data/migration.sqlite3` on the computer running the server. This changes the earlier browser-only behavior: run data now persists until you delete it. The database and engine runtime files are ignored by Git and are never included in source downloads.
@@ -38,7 +87,7 @@ The monitor saves runs, source code, generated artifacts, assessment results, en
 - The page polls saved progress and restores the selected run after refresh. Closing a tab does not stop server-side work. Run history can be searched, filtered, paginated, and reopened to restore reports and downloadable artifacts.
 - Dashboard counts summarize all saved runs/source attempts, not deduplicated database objects. Run timestamps display in your browser's local timezone. Durations refer to the current/last phase (assessment or conversion).
 - Open a source's **Review notes & manual validation** panel to record pending/in-review/approved status, notes, and a manual validation result. Passed or failed validation requires evidence. A source must be converted and its review approved before you can mark it passed. Blocked sources cannot be approved or marked passed.
-- These validation results are **manual attestations**, not automatic Databricks checks. No workspace is connected. Saving a passed result does not remove SSIS notebook review gates, enable workflows, or set engine-generated `validated_on_databricks` to true.
+- These validation results are **manual attestations**, not automatic Databricks checks. The migration monitor is not connected to Databricks job execution; workspace connection probes are configured separately in Databricks settings. Saving a passed result does not remove SSIS notebook review gates, enable workflows, or set engine-generated `validated_on_databricks` to true.
 - Review changes have an event history and version checks to reject stale edits from another tab. This single local workspace has no authenticated reviewer identities or tamper-proof audit guarantees.
 - Use **New run from these sources** to create a separate attempt. Completed/failed runs are not silently overwritten or automatically retried. A server restart marks unfinished runs interrupted instead of claiming completion or replaying conversion.
 - **Delete saved run** removes a finished run's sources, outputs, and review records from the app database. Active runs cannot be deleted. This is not a secure-erasure guarantee for disk backups or previously exported files.
@@ -165,9 +214,10 @@ python -m unittest discover -s tests -v
 node --check static/app.js
 node --check static/monitor.js
 node --check static/validation.js
+node --check static/databricks.js
 ```
 
-Tests cover SQL masking/line references, procedure metadata, SSIS inventory/constraints, unsafe XML/ISPAC inputs, output guards/paths, partial conversion, CLI behavior, LSP edits, HTTP routing/origin checks, and ZIP exports. Real Morpheus/BladeBridge integration tests skip when their engines are not installed. Browser testing on Linux exercised mixed-source assessment, actual engine conversion, artifact selection, ZIP download, and mobile layout. Monitoring tests also cover restart recovery, persistent artifacts/reviews, partial failures, evidence requirements, optimistic edit conflicts, pagination, and deletion. Browser testing verified refresh during conversion, restoration of saved reviews/artifacts, and history filtering. Validation-workbench tests cover exact decimal handling, row multiplicity, NULL/empty distinctions, ordered/keyed comparisons, explicit tolerances, timezone rules, invalid inputs, immutable version history, evidence requirements, run scoping, and persistence. Browser testing covered case creation/versioning, matching/mismatching CSV/JSON results, refresh restoration, file import, historical report download, and mobile layout. Databricks execution validation has not been performed.
+Tests cover SQL masking/line references, procedure metadata, SSIS inventory/constraints, unsafe XML/ISPAC inputs, output guards/paths, partial conversion, CLI behavior, LSP edits, HTTP routing/origin checks, and ZIP exports. Real Morpheus/BladeBridge integration tests skip when their engines are not installed. Browser testing on Linux exercised mixed-source assessment, actual engine conversion, artifact selection, ZIP download, and mobile layout. Monitoring tests also cover restart recovery, persistent artifacts/reviews, partial failures, evidence requirements, optimistic edit conflicts, pagination, and deletion. Browser testing verified refresh during conversion, restoration of saved reviews/artifacts, and history filtering. Validation-workbench tests cover exact decimal handling, row multiplicity, NULL/empty distinctions, ordered/keyed comparisons, explicit tolerances, timezone rules, invalid inputs, immutable version history, evidence requirements, run scoping, and persistence. Browser testing covered case creation/versioning, matching/mismatching CSV/JSON results, refresh restoration, file import, historical report download, and mobile layout. Databricks-settings tests also cover session/environment/CLI authentication selection, credential non-persistence, host binding, safe URL handling, sanitized failures, fixed-query consent, incomplete-probe cancellation, stale settings, and local API Host checks. Browser tests exercised settings against mocked API responses. Live workspace/warehouse testing and Databricks execution validation have not been performed.
 
 ## Runtime and limits
 
