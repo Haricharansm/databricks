@@ -32,7 +32,7 @@ Assessment is available without installing either conversion engine. The UI disp
 
 ## Databricks settings and connection tests
 
-The **Databricks settings** section configures workspace access and SQL warehouse defaults. It is a connection setup/probe integration: it does not execute migration queries, deploy notebooks/jobs, collect live job statuses, or replace uploaded-result validation.
+The **Databricks settings** section configures workspace access and SQL warehouse defaults. It configures workspace access and runs connection probes. Converted SQL is executed only from the separate Deploy to Databricks section; notebooks and jobs are not deployed.
 
 ### Configure your workspace
 
@@ -78,6 +78,28 @@ The app's API accepts localhost/loopback Host headers for its listening port by 
 - `POST /api/databricks/forget-credential`: clear the in-memory credential using the current `revision`.
 
 All action responses are sanitized. Authentication failures, permission denials, unsupported APIs, network problems, and incomplete SQL probes are surfaced without returning raw upstream error bodies or CLI output. No token value is returned by any endpoint.
+
+## Automatic fixes
+
+Conversion and deployment repair common problems automatically and list every change, so you do not edit scripts by hand. Your uploaded sources are never modified.
+
+- **Before conversion** (SQL Server script): adds the comma SQL Server lets you omit before a table-level `PRIMARY KEY`/`CONSTRAINT`/`FOREIGN KEY`; fixes a `PRIMARY KEY`/`UNIQUE` that names a column the table does not have when one existing column clearly matches (for example `Pk_RoleTypeID` → `RoleTypeID`), and otherwise removes that key (Databricks keys are informational).
+- **After conversion** (Databricks SQL): removes bare `NULL` column constraints from `CREATE TABLE`, which Databricks rejects.
+- **At deploy**: handles tables and views that already exist, so deployments can be re-run. **Skip** (default) adds `IF NOT EXISTS` and keeps the existing object and its data; **Replace** uses `CREATE OR REPLACE`, which rebuilds tables and deletes their data; **Stop with an error** keeps the original statement.
+- **At deploy**: creates each schema the SQL writes to (for example `dbo`) with `CREATE SCHEMA IF NOT EXISTS` before the objects. Untick the option to skip this.
+
+Changes appear under **Engine diagnostics & errors** ("Automatic fixes applied") and as notes in deploy Preview. Problems these rules do not cover still need a manual fix; paste the error to get help.
+
+## Deploy converted SQL to Databricks
+
+The **Deploy to Databricks** section runs a converted run's `.sql` files on the SQL warehouse saved in Databricks settings, using the saved default catalog and schema.
+
+1. Configure Databricks settings: workspace URL, credential, SQL warehouse, catalog and schema. Save, then test the workspace connection.
+2. Open a converted run in the Migration monitor. Its converted `.sql` files appear in the Deploy section, all selected.
+3. Select **Preview statements** to see each statement that will run, in order. Nothing is sent to Databricks.
+4. Tick the consent box and select **Deploy to Databricks**. Statements run one at a time through the SQL Statement Execution API. By default deployment stops at the first failed statement and shows the Databricks error message; choose **Continue with the remaining statements** to run everything and list all failures. **Cancel deployment** cancels the running statement and stops.
+
+Before running, bare SQL Server style `NULL` column constraints (for example `col INT NULL`) are removed from `CREATE TABLE` column lists, because Databricks accepts only `NOT NULL` and columns are nullable by default. `NOT NULL`, `DEFAULT NULL`, strings and CHECK clauses are untouched, and Preview notes each adjusted statement. Files are split on top-level semicolons; semicolons inside strings, comments, `$$` bodies and `BEGIN … END` blocks do not split. Each statement may run for up to 15 minutes. Notebooks, workflow templates, plans and reports are never executed. Deployment progress is kept in memory until the server restarts, and start/finish summaries are added to the run timeline. Fully qualified names in the SQL override the default catalog and schema.
 
 ## Migration monitoring dashboard
 
