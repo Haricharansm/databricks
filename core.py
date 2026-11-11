@@ -136,6 +136,28 @@ def sql_engine_status():
             'target_validation': False}
 
 def convert_sql(files):
+    """Repair known SQL Server quirks, convert, then repair known Databricks incompatibilities.
+
+    Uploaded sources are not modified; every automatic change is listed in the diagnostics.
+    """
+    from sqlfix import before_conversion, after_conversion
+    notes, prepared = [], []
+    for item in files:
+        fixed, changes = before_conversion(item['name'], item['sql'])
+        notes.extend('Before conversion: ' + c for c in changes)
+        prepared.append({**item, 'sql': fixed})
+    result = _convert_sql_engine(prepared)
+    for out in result.get('files', []):
+        if isinstance(out.get('sql'), str) and out['name'].lower().endswith('.sql') and not out.get('kind'):
+            out['sql'], changes = after_conversion(out['name'], out['sql'])
+            notes.extend('After conversion: ' + c for c in changes)
+    result['auto_fixes'] = notes
+    if notes:
+        result['diagnostics'] = (result.get('diagnostics') or '') + '\n\nAutomatic fixes applied (review these):\n' + '\n'.join('- ' + n for n in notes)
+    return result
+
+
+def _convert_sql_engine(files):
     state = engine_status()
     if not state['available']:
         raise RuntimeError(state['message'])

@@ -13,6 +13,7 @@ from core import MAX_BYTES, assess, convert, engine_status, validate_files
 
 from monitoring import RunService, Conflict
 from databricks_settings import DatabricksSettings
+from deploy import DeployService
 
 ROOT = Path(__file__).parent
 
@@ -21,6 +22,7 @@ class AppServer(ThreadingHTTPServer):
         super().__init__(address,handler)
         self.runs=run_service or RunService(os.environ.get("MIGRATION_DB_PATH",str(ROOT/".data"/"migration.sqlite3")))
         self.databricks=DatabricksSettings(self.runs)
+        self.deploy=DeployService(self.databricks,self.runs)
     def server_close(self):
         super().server_close()
         if hasattr(self,'databricks'):
@@ -52,6 +54,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
             if path=='/api/databricks/settings':return self.respond(200,self.server.databricks.public())
+            if path=='/api/databricks/deploy/latest':return self.respond(200,{'deployment':self.server.deploy.latest()})
+            deployment=re.fullmatch(r'/api/databricks/deploy/([a-f0-9]{32})',path)
+            if deployment:return self.respond(200,self.server.deploy.status(deployment.group(1)))
             if path=='/api/runs':
                 q=parse_qs(urlsplit(self.path).query)
                 return self.respond(200,self.server.runs.listing(limit=q.get('limit',[25])[0],offset=q.get('offset',[0])[0],status=q.get('status',[''])[0],query=q.get('q',[''])[0]))
@@ -71,7 +76,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -93,7 +98,10 @@ class Handler(SimpleHTTPRequestHandler):
                          '/api/databricks/test-workspace':self.server.databricks.test_workspace,
                          '/api/databricks/warehouses':self.server.databricks.warehouses,
                          '/api/databricks/test-warehouse':self.server.databricks.test_warehouse,
-                         '/api/databricks/forget-credential':self.server.databricks.forget}
+                         '/api/databricks/forget-credential':self.server.databricks.forget,
+                         '/api/databricks/deploy/preview':self.server.deploy.preview,
+                         '/api/databricks/deploy/start':self.server.deploy.start,
+                         '/api/databricks/deploy/cancel':self.server.deploy.cancel}
                 if self.path not in actions:return self.respond(404,{'error':'Not found'})
                 return self.respond(200,actions[self.path](payload))
             validation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/validation/cases(?:/([a-f0-9]{32})(/compare)?)?',self.path)
