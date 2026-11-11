@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" DTS:refId="Package" DTS:DTSID="{DD5BCA46-BA8D-584C-BE73-A127862E597E}" DTS:ExecutableType="Microsoft.Package" DTS:CreationName="Microsoft.Package" DTS:ObjectName="ReadOnlySalesSmokeTest" DTS:Description="Synthetic read-only SSIS conversion smoke test. No REST, credentials, table writes or file output." DTS:PackageType="5" DTS:LocaleID="1033" DTS:ProtectionLevel="0" DTS:VersionBuild="1" DTS:LastModifiedProductVersion="16.0.0.0">
+  <DTS:Property DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager DTS:refId="Package.ConnectionManagers[SampleSqlServer]" DTS:DTSID="{6E691943-5932-5680-8922-34EA6A3C6D1C}" DTS:ObjectName="SampleSqlServer" DTS:CreationName="OLEDB" DTS:Description="Optional source connection for executing in SSIS; replace locally. No password is embedded.">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager DTS:ConnectionString="Data Source=localhost;Initial Catalog=tempdb;Provider=MSOLEDBSQL;Integrated Security=SSPI;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\Preview_Source_Rows" DTS:DTSID="{13E51BCC-DA49-5C32-90BA-D8A124B85EAC}" DTS:ObjectName="Preview_Source_Rows" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Read-only query over inline synthetic rows." DTS:LocaleID="-1" DTS:DisableEventHandlers="True">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{6E691943-5932-5680-8922-34EA6A3C6D1C}" SQLTask:SqlStatementSource="SELECT SaleId, Region, Amount, IsActive&#10;FROM (VALUES&#10;    (1, 'East', CAST(10.00 AS DECIMAL(12,2)), 1),&#10;    (2, 'East', CAST(20.50 AS DECIMAL(12,2)), 1),&#10;    (3, 'West', CAST(7.25 AS DECIMAL(12,2)), 1),&#10;    (4, 'West', CAST(99.00 AS DECIMAL(12,2)), 0),&#10;    (5, 'East', CAST(NULL AS DECIMAL(12,2)), 1)&#10;) AS sample(SaleId, Region, Amount, IsActive)&#10;ORDER BY SaleId;" SQLTask:ResultType="ResultSetType_None" SQLTask:IsStoredProc="False" SQLTask:BypassPrepare="True" SQLTask:TimeOut="30" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\Aggregate_Active_Sales" DTS:DTSID="{979B45CF-EA6D-5836-8058-1DC9477FD262}" DTS:ObjectName="Aggregate_Active_Sales" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Read-only query over inline synthetic rows." DTS:LocaleID="-1" DTS:DisableEventHandlers="True">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{6E691943-5932-5680-8922-34EA6A3C6D1C}" SQLTask:SqlStatementSource="SELECT Region, COUNT(*) AS ActiveRowCount, COUNT(Amount) AS NonNullAmountCount, SUM(Amount) AS TotalAmount&#10;FROM (VALUES&#10;    (1, 'East', CAST(10.00 AS DECIMAL(12,2)), 1),&#10;    (2, 'East', CAST(20.50 AS DECIMAL(12,2)), 1),&#10;    (3, 'West', CAST(7.25 AS DECIMAL(12,2)), 1),&#10;    (4, 'West', CAST(99.00 AS DECIMAL(12,2)), 0),&#10;    (5, 'East', CAST(NULL AS DECIMAL(12,2)), 1)&#10;) AS sample(SaleId, Region, Amount, IsActive)&#10;WHERE IsActive = 1&#10;GROUP BY Region&#10;ORDER BY Region;" SQLTask:ResultType="ResultSetType_None" SQLTask:IsStoredProc="False" SQLTask:BypassPrepare="True" SQLTask:TimeOut="30" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:refId="Package\Verify_Active_Totals" DTS:DTSID="{A91DD9F4-789F-5DCD-BAB7-F14A0ABF3A4F}" DTS:ObjectName="Verify_Active_Totals" DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:CreationName="Microsoft.ExecuteSQLTask" DTS:Description="Read-only query over inline synthetic rows." DTS:LocaleID="-1" DTS:DisableEventHandlers="True">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData SQLTask:Connection="{6E691943-5932-5680-8922-34EA6A3C6D1C}" SQLTask:SqlStatementSource="SELECT COUNT(*) AS ActiveRowCount, COUNT(Amount) AS NonNullAmountCount, SUM(Amount) AS TotalAmount&#10;FROM (VALUES&#10;    (1, 'East', CAST(10.00 AS DECIMAL(12,2)), 1),&#10;    (2, 'East', CAST(20.50 AS DECIMAL(12,2)), 1),&#10;    (3, 'West', CAST(7.25 AS DECIMAL(12,2)), 1),&#10;    (4, 'West', CAST(99.00 AS DECIMAL(12,2)), 0),&#10;    (5, 'East', CAST(NULL AS DECIMAL(12,2)), 1)&#10;) AS sample(SaleId, Region, Amount, IsActive)&#10;WHERE IsActive = 1;" SQLTask:ResultType="ResultSetType_None" SQLTask:IsStoredProc="False" SQLTask:BypassPrepare="True" SQLTask:TimeOut="30" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint1]" DTS:DTSID="{86818E84-3E5C-5DAA-9829-DBA596698BEB}" DTS:ObjectName="Constraint1" DTS:From="Package\Preview_Source_Rows" DTS:To="Package\Aggregate_Active_Sales" DTS:Value="0" DTS:EvalOp="0" DTS:LogicalAnd="True" />
+    <DTS:PrecedenceConstraint DTS:refId="Package.PrecedenceConstraints[Constraint2]" DTS:DTSID="{6C9FC083-7157-5F12-9571-CAD5426E2E1F}" DTS:ObjectName="Constraint2" DTS:From="Package\Aggregate_Active_Sales" DTS:To="Package\Verify_Active_Totals" DTS:Value="0" DTS:EvalOp="0" DTS:LogicalAnd="True" />
+  </DTS:PrecedenceConstraints>
+</DTS:Executable>
