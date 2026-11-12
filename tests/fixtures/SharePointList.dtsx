@@ -1,0 +1,2332 @@
+<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="9/11/2025 5:56:58 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="C3IT-LTP35"
+  DTS:CreatorName="AzureAD\YadneshBhingarde"
+  DTS:DTSID="{E91BEE8F-D90B-4A5E-B623-01AF9E515AEE}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="16.0.5314.0"
+  DTS:LocaleID="16393"
+  DTS:ObjectName="Package"
+  DTS:PackageType="5"
+  DTS:VersionBuild="29"
+  DTS:VersionGUID="{91ED3646-40B5-45BC-9329-6501CF73F59F}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Otpttoff]"
+      DTS:CreationName="FLATFILE"
+      DTS:DTSID="{FB46321D-D04E-4FB7-9FE8-DA0511EF52CF}"
+      DTS:ObjectName="Otpttoff">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:Format="Delimited"
+          DTS:LocaleID="16393"
+          DTS:HeaderRowDelimiter="_x000D__x000A_"
+          DTS:ColumnNamesInFirstDataRow="True"
+          DTS:RowDelimiter=""
+          DTS:TextQualifier="_x003C_none_x003E_"
+          DTS:CodePage="1252"
+          DTS:ConnectionString="D:\outputfile.txt">
+          <DTS:FlatFileColumns>
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.ID"
+              DTS:DTSID="{F960EC84-E572-454F-9740-0A76D3144BBC}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.Title"
+              DTS:DTSID="{C1DCD327-FBC9-4AAC-9BC5-B8ABB243A973}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.ClauseDescription"
+              DTS:DTSID="{A2140EFD-A862-478A-975F-6AE532363DB0}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.ClauseName"
+              DTS:DTSID="{A7F7B1BA-8476-453E-AFFC-5B76A2281845}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.InputFields"
+              DTS:DTSID="{BD764192-A985-4084-B179-0BC9293D438C}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x002C_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.RequiresInput"
+              DTS:DTSID="{5E537731-44EB-4873-B8D5-94EC47CA341F}"
+              DTS:CreationName="" />
+            <DTS:FlatFileColumn
+              DTS:ColumnType="Delimited"
+              DTS:ColumnDelimiter="_x000D__x000A_"
+              DTS:MaximumWidth="255"
+              DTS:DataType="130"
+              DTS:TextQualified="True"
+              DTS:ObjectName="fields.TemplateFileName"
+              DTS:DTSID="{3E953B37-89E9-41BA-ADD8-D003D5FB05C9}"
+              DTS:CreationName="" />
+          </DTS:FlatFileColumns>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Data Flow Task"
+      DTS:CreationName="Microsoft.Pipeline"
+      DTS:Description="Data Flow Task"
+      DTS:DTSID="{E6471951-6043-46DF-B2BD-1FC0050F97CF}"
+      DTS:ExecutableType="Microsoft.Pipeline"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Data Flow Task"
+      DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline
+          version="1">
+          <components>
+            <component
+              refId="Package\Data Flow Task\Flat File Destination"
+              componentClassID="Microsoft.FlatFileDestination"
+              contactInfo="Flat File Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;1"
+              description="Flat File Destination"
+              localeId="16393"
+              name="Flat File Destination"
+              version="1">
+              <properties>
+                <property
+                  dataType="System.Boolean"
+                  description="Specifies whether the data will overwrite or append to the destination file."
+                  name="Overwrite">true</property>
+                <property
+                  dataType="System.Null"
+                  description="Specifies the text to write to the destination file before any data is written."
+                  expressionType="Notify"
+                  name="Header" />
+                <property
+                  dataType="System.Boolean"
+                  description="When text qualifier is enabled, specifies whether the text qualifier in the data written to the destination file will be escaped or not."
+                  name="EscapeQualifier">false</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\Data Flow Task\Flat File Destination.Connections[FlatFileConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Otpttoff]"
+                  connectionManagerRefId="Package.ConnectionManagers[Otpttoff]"
+                  name="FlatFileConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input]"
+                  hasSideEffects="true"
+                  name="Flat File Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.ClauseName]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.ClauseName"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.ClauseName]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ClauseName]" />
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.ClauseDescription]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.ClauseDescription"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.ClauseDescription]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ClauseDescription]" />
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.ID]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.ID"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.ID]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ID]" />
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.Title]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.Title"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.Title]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.Title]" />
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.InputFields]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.InputFields"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.InputFields]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.InputFields]" />
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.RequiresInput]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.RequiresInput"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.RequiresInput]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.RequiresInput]" />
+                    <inputColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].Columns[fields.TemplateFileName]"
+                      cachedDataType="wstr"
+                      cachedLength="255"
+                      cachedName="fields.TemplateFileName"
+                      externalMetadataColumnId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.TemplateFileName]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.TemplateFileName]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.ID]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ID" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.Title]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Title" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.ClauseDescription]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ClauseDescription" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.ClauseName]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ClauseName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.InputFields]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.InputFields" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.RequiresInput]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.RequiresInput" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input].ExternalColumns[fields.TemplateFileName]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.TemplateFileName" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+            </component>
+            <component
+              refId="Package\Data Flow Task\REST Source"
+              componentClassID="Microsoft.ManagedComponentHost"
+              contactInfo="Extracts data from REST service.; COZYROC LLC; SSIS+; © 2006-2024 COZYROC LLC; All Rights Reserved; http://www.cozyroc.com/;0"
+              description="Extracts data from REST service."
+              name="REST Source"
+              usesDispositions="true">
+              <properties>
+                <property
+                  dataType="System.Null"
+                  name="ComponentObject"
+                  typeConverter="NOTBROWSABLE" />
+                <property
+                  dataType="System.Int32"
+                  description="Specifies query batch size."
+                  expressionType="Notify"
+                  name="BatchSize">200</property>
+                <property
+                  dataType="System.String"
+                  description="REST resource."
+                  expressionType="Notify"
+                  name="Resource"
+                  typeConverter="CozyRoc.SqlServer.SSIS.TableEditor">Site | List Item</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies ID of the API endpoint used for retrieving data"
+                  expressionType="Notify"
+                  name="Endpoint"></property>
+                <property
+                  dataType="System.String"
+                  description="Specify parameter. Syntax is: parameter name=parameter value. Multiple parameters are separated with newline. Optional."
+                  expressionType="Notify"
+                  name="ResourceParameter"
+                  UITypeEditor="CozyRoc.SqlServer.SSIS.TextDialogEditor">list_id=ClauseMetadata</property>
+                <property
+                  dataType="System.String"
+                  description="Specify additional resource metadata. Optional."
+                  expressionType="Notify"
+                  name="ResourceExtendMetadata"
+                  state="cdata"
+                  UITypeEditor="CozyRoc.SqlServer.SSIS.TextDialogEditor"><![CDATA[]]></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies maximum number of records to retrieve."
+                  name="LimitResult">0</property>
+                <property
+                  dataType="System.String"
+                  name="UserComponentTypeName">CozyRoc.RestSource</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\Data Flow Task\REST Source.Connections[REST]"
+                  connectionManagerID="{3A748160-9BB7-44FB-965D-9956D83066CC}:external"
+                  connectionManagerRefId="Project.ConnectionManagers[REST Connection Manager 2]"
+                  description="REST Connection Manager"
+                  name="REST" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item]"
+                  name="Site | List Item">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ClauseName]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.ClauseName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ClauseName]"
+                      name="fields.ClauseName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ClauseDescription]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.ClauseDescription]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ClauseDescription]"
+                      name="fields.ClauseDescription"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ID]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.ID]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.ID]"
+                      name="fields.ID"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.Title]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.Title]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.Title]"
+                      name="fields.Title"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.InputFields]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.InputFields]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.InputFields]"
+                      name="fields.InputFields"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.RequiresInput]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.RequiresInput]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.RequiresInput]"
+                      name="fields.RequiresInput"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.TemplateFileName]"
+                      dataType="wstr"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.TemplateFileName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].Columns[fields.TemplateFileName]"
+                      name="fields.TemplateFileName"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.ID]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ID" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.Title]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Title" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.ClauseDescription]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ClauseDescription" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.ClauseName]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ClauseName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.InputFields]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.InputFields" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.RequiresInput]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.RequiresInput" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item].ExternalColumns[fields.TemplateFileName]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.TemplateFileName" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output]"
+                  isErrorOut="true"
+                  name="REST Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[ErrorDescription]"
+                      dataType="wstr"
+                      length="1024"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[ErrorDescription]"
+                      name="ErrorDescription" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics]"
+                      name="analytics" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime]"
+                      name="analytics.allTime" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime.access]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime.access]"
+                      name="analytics.allTime.access" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime.access.actionCount]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime.access.actionCount]"
+                      name="analytics.allTime.access.actionCount" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime.access.actorCount]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.allTime.access.actorCount]"
+                      name="analytics.allTime.access.actorCount" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays]"
+                      name="analytics.lastSevenDays" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays.access]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays.access]"
+                      name="analytics.lastSevenDays.access" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays.access.actionCount]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays.access.actionCount]"
+                      name="analytics.lastSevenDays.access.actionCount" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays.access.actorCount]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[analytics.lastSevenDays.access.actorCount]"
+                      name="analytics.lastSevenDays.access.actorCount" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[contentType]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[contentType]"
+                      name="contentType" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[contentType.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[contentType.id]"
+                      name="contentType.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[contentType.name]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[contentType.name]"
+                      name="contentType.name" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy]"
+                      name="createdBy" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application]"
+                      name="createdBy.application" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application.displayName]"
+                      name="createdBy.application.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application.id]"
+                      name="createdBy.application.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.application.thumbnails]"
+                      name="createdBy.application.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.conversation]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.conversation]"
+                      name="createdBy.conversation" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device]"
+                      name="createdBy.device" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device.displayName]"
+                      name="createdBy.device.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device.id]"
+                      name="createdBy.device.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.device.thumbnails]"
+                      name="createdBy.device.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group]"
+                      name="createdBy.group" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group.displayName]"
+                      name="createdBy.group.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group.id]"
+                      name="createdBy.group.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.group.thumbnails]"
+                      name="createdBy.group.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user]"
+                      name="createdBy.user" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user.displayName]"
+                      name="createdBy.user.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user.id]"
+                      name="createdBy.user.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdBy.user.thumbnails]"
+                      name="createdBy.user.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdDateTime]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[createdDateTime]"
+                      name="createdDateTime" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[eTag]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[eTag]"
+                      name="eTag" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.App Created By]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.App Created By]"
+                      name="fields.App Created By" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.App Modified By]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.App Modified By]"
+                      name="fields.App Modified By" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Attachments]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Attachments]"
+                      name="fields.Attachments" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Color Tag]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Color Tag]"
+                      name="fields.Color Tag" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Compliance Asset Id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Compliance Asset Id]"
+                      name="fields.Compliance Asset Id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Content Type]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Content Type]"
+                      name="fields.Content Type" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Created]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Created]"
+                      name="fields.Created" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Created By]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Created By]"
+                      name="fields.Created By" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Edit]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Edit]"
+                      name="fields.Edit" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Folder Child Count]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Folder Child Count]"
+                      name="fields.Folder Child Count" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.ID]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.ID]"
+                      name="fields.ID" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Item Child Count]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Item Child Count]"
+                      name="fields.Item Child Count" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Item is a Record]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Item is a Record]"
+                      name="fields.Item is a Record" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Label applied by]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Label applied by]"
+                      name="fields.Label applied by" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Label setting]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Label setting]"
+                      name="fields.Label setting" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Modified]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Modified]"
+                      name="fields.Modified" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Modified By]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Modified By]"
+                      name="fields.Modified By" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Retention label]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Retention label]"
+                      name="fields.Retention label" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Retention label Applied]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Retention label Applied]"
+                      name="fields.Retention label Applied" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Title]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Title]"
+                      name="fields.Title" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Type]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Type]"
+                      name="fields.Type" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Version]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.Version]"
+                      name="fields.Version" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[id]"
+                      name="id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy]"
+                      name="lastModifiedBy" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application]"
+                      name="lastModifiedBy.application" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application.displayName]"
+                      name="lastModifiedBy.application.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application.id]"
+                      name="lastModifiedBy.application.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.application.thumbnails]"
+                      name="lastModifiedBy.application.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.conversation]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.conversation]"
+                      name="lastModifiedBy.conversation" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device]"
+                      name="lastModifiedBy.device" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device.displayName]"
+                      name="lastModifiedBy.device.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device.id]"
+                      name="lastModifiedBy.device.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.device.thumbnails]"
+                      name="lastModifiedBy.device.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group]"
+                      name="lastModifiedBy.group" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group.displayName]"
+                      name="lastModifiedBy.group.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group.id]"
+                      name="lastModifiedBy.group.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.group.thumbnails]"
+                      name="lastModifiedBy.group.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user]"
+                      name="lastModifiedBy.user" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user.displayName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user.displayName]"
+                      name="lastModifiedBy.user.displayName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user.id]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user.id]"
+                      name="lastModifiedBy.user.id" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user.thumbnails]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedBy.user.thumbnails]"
+                      name="lastModifiedBy.user.thumbnails" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedDateTime]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[lastModifiedDateTime]"
+                      name="lastModifiedDateTime" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[parentReference]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[parentReference]"
+                      name="parentReference" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[parentReference.siteId]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[parentReference.siteId]"
+                      name="parentReference.siteId" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[versions]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[versions]"
+                      name="versions" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[webUrl]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[webUrl]"
+                      name="webUrl" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.ClauseDescription]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.ClauseDescription]"
+                      name="fields.ClauseDescription" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.ClauseName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.ClauseName]"
+                      name="fields.ClauseName" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.InputFields]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.InputFields]"
+                      name="fields.InputFields" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.RequiresInput]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.RequiresInput]"
+                      name="fields.RequiresInput" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.TemplateFileName]"
+                      dataType="wstr"
+                      length="250"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[REST Source Error Output].Columns[fields.TemplateFileName]"
+                      name="fields.TemplateFileName" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+                <output
+                  refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}]"
+                  name="Site | List Item_versions_{}">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime]"
+                      length="97"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime]"
+                      name="analytics.allTime"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime.access]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime.access]"
+                      length="91"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime.access]"
+                      name="analytics.allTime.access"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime.access.actionCount]"
+                      dataType="i4"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime.access.actionCount]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime.access.actionCount]"
+                      name="analytics.allTime.access.actionCount"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime.access.actorCount]"
+                      dataType="i4"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime.access.actorCount]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.allTime.access.actorCount]"
+                      name="analytics.allTime.access.actorCount"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays]"
+                      length="97"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays]"
+                      name="analytics.lastSevenDays"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays.access]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays.access]"
+                      length="91"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays.access]"
+                      name="analytics.lastSevenDays.access"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays.access.actionCount]"
+                      dataType="i4"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays.access.actionCount]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays.access.actionCount]"
+                      name="analytics.lastSevenDays.access.actionCount"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays.access.actorCount]"
+                      dataType="i4"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays.access.actorCount]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[analytics.lastSevenDays.access.actorCount]"
+                      name="analytics.lastSevenDays.access.actorCount"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[contentType]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[contentType]"
+                      length="516"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[contentType]"
+                      name="contentType"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[contentType.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[contentType.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[contentType.id]"
+                      name="contentType.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[contentType.name]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[contentType.name]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[contentType.name]"
+                      name="contentType.name"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy]"
+                      dataType="nText"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy]"
+                      name="createdBy"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application]"
+                      name="createdBy.application"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application.displayName]"
+                      name="createdBy.application.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application.id]"
+                      name="createdBy.application.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.application.thumbnails]"
+                      name="createdBy.application.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.conversation]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.conversation]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.conversation]"
+                      name="createdBy.conversation"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device]"
+                      name="createdBy.device"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device.displayName]"
+                      name="createdBy.device.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device.id]"
+                      name="createdBy.device.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.device.thumbnails]"
+                      name="createdBy.device.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group]"
+                      name="createdBy.group"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group.displayName]"
+                      name="createdBy.group.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group.id]"
+                      name="createdBy.group.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.group.thumbnails]"
+                      name="createdBy.group.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user]"
+                      name="createdBy.user"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user.displayName]"
+                      name="createdBy.user.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user.id]"
+                      name="createdBy.user.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdBy.user.thumbnails]"
+                      name="createdBy.user.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdDateTime]"
+                      dataType="dbTimeStamp"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdDateTime]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[createdDateTime]"
+                      name="createdDateTime"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[eTag]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[eTag]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[eTag]"
+                      name="eTag"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.App Created By]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.App Created By]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.App Created By]"
+                      name="fields.App Created By"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.App Modified By]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.App Modified By]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.App Modified By]"
+                      name="fields.App Modified By"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Attachments]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Attachments]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Attachments]"
+                      name="fields.Attachments"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Color Tag]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Color Tag]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Color Tag]"
+                      name="fields.Color Tag"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Compliance Asset Id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Compliance Asset Id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Compliance Asset Id]"
+                      name="fields.Compliance Asset Id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Content Type]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Content Type]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Content Type]"
+                      name="fields.Content Type"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Created]"
+                      dataType="dbTimeStamp"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Created]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Created]"
+                      name="fields.Created"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Created By]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Created By]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Created By]"
+                      name="fields.Created By"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Edit]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Edit]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Edit]"
+                      name="fields.Edit"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Folder Child Count]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Folder Child Count]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Folder Child Count]"
+                      name="fields.Folder Child Count"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.ID]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.ID]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.ID]"
+                      name="fields.ID"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Item Child Count]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Item Child Count]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Item Child Count]"
+                      name="fields.Item Child Count"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Item is a Record]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Item is a Record]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Item is a Record]"
+                      name="fields.Item is a Record"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Label applied by]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Label applied by]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Label applied by]"
+                      name="fields.Label applied by"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Label setting]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Label setting]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Label setting]"
+                      name="fields.Label setting"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Modified]"
+                      dataType="dbTimeStamp"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Modified]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Modified]"
+                      name="fields.Modified"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Modified By]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Modified By]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Modified By]"
+                      name="fields.Modified By"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Retention label]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Retention label]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Retention label]"
+                      name="fields.Retention label"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Retention label Applied]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Retention label Applied]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Retention label Applied]"
+                      name="fields.Retention label Applied"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Title]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Title]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Title]"
+                      name="fields.Title"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Type]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Type]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Type]"
+                      name="fields.Type"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Version]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Version]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.Version]"
+                      name="fields.Version"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[id]"
+                      name="id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy]"
+                      dataType="nText"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy]"
+                      name="lastModifiedBy"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application]"
+                      name="lastModifiedBy.application"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application.displayName]"
+                      name="lastModifiedBy.application.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application.id]"
+                      name="lastModifiedBy.application.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.application.thumbnails]"
+                      name="lastModifiedBy.application.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.conversation]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.conversation]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.conversation]"
+                      name="lastModifiedBy.conversation"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device]"
+                      name="lastModifiedBy.device"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device.displayName]"
+                      name="lastModifiedBy.device.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device.id]"
+                      name="lastModifiedBy.device.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.device.thumbnails]"
+                      name="lastModifiedBy.device.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group]"
+                      name="lastModifiedBy.group"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group.displayName]"
+                      name="lastModifiedBy.group.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group.id]"
+                      name="lastModifiedBy.group.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.group.thumbnails]"
+                      name="lastModifiedBy.group.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user]"
+                      length="1533"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user]"
+                      name="lastModifiedBy.user"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user.displayName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user.displayName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user.displayName]"
+                      name="lastModifiedBy.user.displayName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user.id]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user.id]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user.id]"
+                      name="lastModifiedBy.user.id"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user.thumbnails]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user.thumbnails]"
+                      length="1000"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedBy.user.thumbnails]"
+                      name="lastModifiedBy.user.thumbnails"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedDateTime]"
+                      dataType="dbTimeStamp"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedDateTime]"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[lastModifiedDateTime]"
+                      name="lastModifiedDateTime"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[parentReference]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[parentReference]"
+                      length="261"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[parentReference]"
+                      name="parentReference"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[parentReference.siteId]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[parentReference.siteId]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[parentReference.siteId]"
+                      name="parentReference.siteId"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[webUrl]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[webUrl]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[webUrl]"
+                      name="webUrl"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.ClauseDescription]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.ClauseDescription]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.ClauseDescription]"
+                      name="fields.ClauseDescription"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.ClauseName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.ClauseName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.ClauseName]"
+                      name="fields.ClauseName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.InputFields]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.InputFields]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.InputFields]"
+                      name="fields.InputFields"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.RequiresInput]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.RequiresInput]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.RequiresInput]"
+                      name="fields.RequiresInput"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.TemplateFileName]"
+                      dataType="wstr"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.TemplateFileName]"
+                      length="255"
+                      lineageId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].Columns[fields.TemplateFileName]"
+                      name="fields.TemplateFileName"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics]"
+                      dataType="wstr"
+                      length="214"
+                      name="analytics" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime]"
+                      dataType="wstr"
+                      length="97"
+                      name="analytics.allTime" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime.access]"
+                      dataType="wstr"
+                      length="91"
+                      name="analytics.allTime.access" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime.access.actionCount]"
+                      dataType="i4"
+                      name="analytics.allTime.access.actionCount" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.allTime.access.actorCount]"
+                      dataType="i4"
+                      name="analytics.allTime.access.actorCount" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays]"
+                      dataType="wstr"
+                      length="97"
+                      name="analytics.lastSevenDays" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays.access]"
+                      dataType="wstr"
+                      length="91"
+                      name="analytics.lastSevenDays.access" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays.access.actionCount]"
+                      dataType="i4"
+                      name="analytics.lastSevenDays.access.actionCount" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[analytics.lastSevenDays.access.actorCount]"
+                      dataType="i4"
+                      name="analytics.lastSevenDays.access.actorCount" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[contentType]"
+                      dataType="wstr"
+                      length="516"
+                      name="contentType" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[contentType.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="contentType.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[contentType.name]"
+                      dataType="wstr"
+                      length="255"
+                      name="contentType.name" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy]"
+                      dataType="nText"
+                      name="createdBy" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application]"
+                      dataType="wstr"
+                      length="1533"
+                      name="createdBy.application" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.application.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.application.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.application.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="createdBy.application.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.conversation]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.conversation" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device]"
+                      dataType="wstr"
+                      length="1533"
+                      name="createdBy.device" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.device.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.device.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.device.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="createdBy.device.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group]"
+                      dataType="wstr"
+                      length="1533"
+                      name="createdBy.group" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.group.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.group.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.group.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="createdBy.group.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user]"
+                      dataType="wstr"
+                      length="1533"
+                      name="createdBy.user" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.user.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="createdBy.user.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdBy.user.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="createdBy.user.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[createdDateTime]"
+                      dataType="dbTimeStamp"
+                      name="createdDateTime" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[eTag]"
+                      dataType="wstr"
+                      length="255"
+                      name="eTag" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.App Created By]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.App Created By" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.App Modified By]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.App Modified By" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Attachments]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Attachments" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Color Tag]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Color Tag" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Compliance Asset Id]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Compliance Asset Id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Content Type]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Content Type" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Created]"
+                      dataType="dbTimeStamp"
+                      name="fields.Created" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Created By]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Created By" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Edit]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Edit" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Folder Child Count]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Folder Child Count" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.ID]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ID" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Item Child Count]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Item Child Count" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Item is a Record]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Item is a Record" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Label applied by]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Label applied by" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Label setting]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Label setting" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Modified]"
+                      dataType="dbTimeStamp"
+                      name="fields.Modified" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Modified By]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Modified By" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Retention label]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Retention label" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Retention label Applied]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Retention label Applied" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Title]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Title" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Type]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Type" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.Version]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.Version" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[id]"
+                      dataType="wstr"
+                      length="255"
+                      name="id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy]"
+                      dataType="nText"
+                      name="lastModifiedBy" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application]"
+                      dataType="wstr"
+                      length="1533"
+                      name="lastModifiedBy.application" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.application.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.application.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.application.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="lastModifiedBy.application.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.conversation]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.conversation" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device]"
+                      dataType="wstr"
+                      length="1533"
+                      name="lastModifiedBy.device" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.device.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.device.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.device.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="lastModifiedBy.device.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group]"
+                      dataType="wstr"
+                      length="1533"
+                      name="lastModifiedBy.group" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.group.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.group.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.group.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="lastModifiedBy.group.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user]"
+                      dataType="wstr"
+                      length="1533"
+                      name="lastModifiedBy.user" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.user.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="lastModifiedBy.user.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedBy.user.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="lastModifiedBy.user.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[lastModifiedDateTime]"
+                      dataType="dbTimeStamp"
+                      name="lastModifiedDateTime" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[parentReference]"
+                      dataType="wstr"
+                      length="261"
+                      name="parentReference" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[parentReference.siteId]"
+                      dataType="wstr"
+                      length="255"
+                      name="parentReference.siteId" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions]"
+                      dataType="nText"
+                      name="versions" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[webUrl]"
+                      dataType="wstr"
+                      length="255"
+                      name="webUrl" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy]"
+                      dataType="nText"
+                      name="versions.{}.lastModifiedBy" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.application]"
+                      dataType="wstr"
+                      length="1533"
+                      name="versions.{}.lastModifiedBy.application" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.application.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.application.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.application.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.application.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.application.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="versions.{}.lastModifiedBy.application.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.conversation]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.conversation" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.device]"
+                      dataType="wstr"
+                      length="1533"
+                      name="versions.{}.lastModifiedBy.device" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.device.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.device.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.device.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.device.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.device.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="versions.{}.lastModifiedBy.device.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.group]"
+                      dataType="wstr"
+                      length="1533"
+                      name="versions.{}.lastModifiedBy.group" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.group.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.group.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.group.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.group.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.group.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="versions.{}.lastModifiedBy.group.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.user]"
+                      dataType="wstr"
+                      length="1533"
+                      name="versions.{}.lastModifiedBy.user" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.user.displayName]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.user.displayName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.user.id]"
+                      dataType="wstr"
+                      length="255"
+                      name="versions.{}.lastModifiedBy.user.id" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedBy.user.thumbnails]"
+                      dataType="wstr"
+                      length="1000"
+                      name="versions.{}.lastModifiedBy.user.thumbnails" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[versions.{\}.lastModifiedDateTime]"
+                      dataType="dbTimeStamp"
+                      name="versions.{}.lastModifiedDateTime" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.ClauseDescription]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ClauseDescription" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.ClauseName]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.ClauseName" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.InputFields]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.InputFields" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.RequiresInput]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.RequiresInput" />
+                    <externalMetadataColumn
+                      refId="Package\Data Flow Task\REST Source.Outputs[Site | List Item_versions_{\}].ExternalColumns[fields.TemplateFileName]"
+                      dataType="wstr"
+                      length="255"
+                      name="fields.TemplateFileName" />
+                  </externalMetadataColumns>
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path
+              refId="Package\Data Flow Task.Paths[Site | List Item]"
+              endId="Package\Data Flow Task\Flat File Destination.Inputs[Flat File Destination Input]"
+              name="Site | List Item"
+              startId="Package\Data Flow Task\REST Source.Outputs[Site | List Item]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="150.4,41.6"
+          Id="Package\Data Flow Task"
+          TopLeft="483.333306925165,124.799999132156" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\Data Flow Task">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mssgm="clr-namespace:Microsoft.SqlServer.Graph.Model;assembly=Microsoft.SqlServer.Graph">
+        <NodeLayout
+          Size="141.6,41.6"
+          Id="Package\Data Flow Task\REST Source"
+          TopLeft="498.333306105602,75.3999994756778" />
+        <NodeLayout
+          Size="170.4,41.6"
+          Id="Package\Data Flow Task\Flat File Destination"
+          TopLeft="563.333302554158,228.799998408953" />
+        <EdgeLayout
+          Id="Package\Data Flow Task.Paths[Site | List Item]"
+          TopLeft="569.133306105602,116.999999475678">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="79.3999964485565,111.799998933276"
+              Start="0,0"
+              End="79.3999964485565,104.299998933276">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,51.8999994666378" />
+                  <mssgle:CubicBezierSegment
+                    Point1="0,51.8999994666378"
+                    Point2="0,55.8999994666378"
+                    Point3="4,55.8999994666378" />
+                  <mssgle:LineSegment
+                    End="75.3999964485565,55.8999994666378" />
+                  <mssgle:CubicBezierSegment
+                    Point1="75.3999964485565,55.8999994666378"
+                    Point2="79.3999964485565,55.8999994666378"
+                    Point3="79.3999964485565,59.8999994666378" />
+                  <mssgle:LineSegment
+                    End="79.3999964485565,104.299998933276" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <mssgm:EdgeLabel
+              BoundingBox="6.46626775552826,60.8999994666378,66.4674609375,11.51171875"
+              RelativePosition="Any" />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

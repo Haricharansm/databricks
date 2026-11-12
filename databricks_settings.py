@@ -146,9 +146,15 @@ class DatabricksSettings:
                 if len(raw)>1024*1024:raise DatabricksError('Workspace response exceeded the 1 MB connection-test limit.')
                 return json.loads(raw.decode()) if raw else {}
         except HTTPError as exc:
-            code=exc.code;exc.close()
+            code=exc.code
+            try:
+                body=json.loads(exc.read(65536).decode() or '{}')
+                detail=str(body.get('message') or '')[:500] if isinstance(body,dict) else ''
+            except (ValueError,UnicodeError,OSError):detail=''
+            finally:exc.close()
             messages={400:'Workspace rejected the request. Check the warehouse, catalog/schema, and supported API.',401:'Authentication failed or expired. Refresh your credential and retry.',403:'Permission denied. Check workspace and SQL warehouse permissions.',404:'Resource not found. Check the workspace URL, warehouse ID, and API availability.',429:'Workspace rate limit reached. Wait before retrying.'}
-            raise DatabricksError(messages.get(code,f'Workspace request failed (HTTP {code}). Redirects are not followed.')) from None
+            text=messages.get(code,f'Workspace request failed (HTTP {code}). Redirects are not followed.')
+            raise DatabricksError(text+(' Databricks says: '+detail if detail and token not in detail else '')) from None
         except (URLError,OSError,TimeoutError):raise DatabricksError('Could not reach the workspace securely. Check the URL, TLS trust, proxy/VPN, and network access.') from None
         except (ValueError,UnicodeError):raise DatabricksError('Workspace returned an unexpected response format.') from None
 

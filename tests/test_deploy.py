@@ -73,6 +73,8 @@ class DeployTests(unittest.TestCase):
                 if 'SLOW' in payload['statement']:
                     return {'statement_id': sid, 'status': {'state': 'RUNNING'}}
                 return {'statement_id': sid, 'status': {'state': 'SUCCEEDED'}}
+            if method == 'GET' and path == '/api/2.0/preview/scim/v2/Me':
+                return {'userName': 'radhika@example.com'}
             if method == 'GET':
                 return {'statement_id': path.rsplit('/', 1)[1], 'status': {'state': 'SUCCEEDED'}}
             return {}
@@ -141,6 +143,35 @@ class DeployTests(unittest.TestCase):
         self.assertEqual((job['completed'], job['failed']), (3, 1))
         self.assertEqual([s['status'] for s in job['statements']], ['succeeded', 'failed', 'succeeded', 'succeeded'])
         self.assertIn('1 statement(s) failed and the rest ran', job['message'])
+
+    def test_notebook_only_run_imports_into_workspace(self):
+        import base64
+        nb = ('# Databricks notebook source\nprint(1)\n\n# COMMAND ----------\n'
+              'Package_Load = f"""INSERT INTO dbo.Stg_Customer VALUES (1)"""\nspark.sql(Package_Load)\n')
+        conv = {'files': [{'name': 'notebooks/Package_2c63fda5/Package/Package.py', 'sql': nb, 'kind': 'notebook'},
+                          {'name': 'workflows/Package_2c63fda5.job.json', 'sql': '{}', 'kind': 'workflow_template'}]}
+        with self.store.db() as db:
+            db.execute('UPDATE runs SET conversion_json=? WHERE id=?', (json.dumps(conv), self.run_id))
+        p = self.deploy.preview({'run_id': self.run_id})
+        self.assertEqual(p['statement_count'], 1)
+        self.assertIn('Import notebook to /Users/<you>/crosslake_migration/Package_2c63fda5/Package/Package', p['statements'][0]['preview'])
+        job = self.wait(self.deploy.start({'run_id': self.run_id, 'allow_execution': True, 'revision': 1})['id'])
+        self.assertEqual(job['status'], 'succeeded', job['message'])
+        self.assertNotIn('_home', job)
+        mkdirs = [c[2] for c in self.calls if c[1] == '/api/2.0/workspace/mkdirs']
+        imports = [c[2] for c in self.calls if c[1] == '/api/2.0/workspace/import']
+        self.assertEqual(mkdirs, [{'path': '/Users/radhika@example.com/crosslake_migration/Package_2c63fda5/Package'}])
+        self.assertEqual(imports[0]['path'], '/Users/radhika@example.com/crosslake_migration/Package_2c63fda5/Package/Package')
+        self.assertEqual((imports[0]['format'], imports[0]['language'], imports[0]['overwrite']), ('SOURCE', 'PYTHON', True))
+        body = base64.b64decode(imports[0]['content']).decode()
+        self.assertIn('spark.sql("USE CATALOG `main`")', body)
+        self.assertLess(body.index('USE CATALOG'), body.index('INSERT INTO dbo.Stg_Customer'))
+        self.assertIn('INSERT INTO dbo.Stg_Customer VALUES (1)"""', body)
+        self.assertFalse(any(c[1] == '/api/2.0/sql/statements' for c in self.calls))
+
+    def test_notebook_folder_validated(self):
+        with self.assertRaises(ValueError):
+            self.deploy.preview({'run_id': self.run_id, 'notebook_folder': 'C:\\temp'})
 
     def test_requires_consent(self):
         with self.assertRaises(ValueError):
