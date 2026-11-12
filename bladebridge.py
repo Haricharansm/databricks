@@ -9,6 +9,7 @@ import re
 import tempfile
 from morpheus import Morpheus
 from ssis import inventory, package_key
+from ssis_fixes import component_specs, repair_notebook
 
 ROOT=Path(__file__).parent
 
@@ -73,6 +74,11 @@ def convert_package(item):
             if any(d.get('severity')==1 for d in diagnostics):
                 raise RuntimeError('BladeBridge could not convert the package: '+json.dumps(diagnostics))
             files=unpack_outputs(mime,key)
+            specs=component_specs(item['sql'])
+            for artifact in files:
+                if artifact['name'].endswith('.py'):
+                    artifact['sql'],notes=repair_notebook(artifact['sql'],specs)
+                    diagnostics.extend({'severity':1 if 'could not be converted' in n else 2,'message':f"Automatic fix in {artifact['name']}: {n}"} for n in notes)
             for artifact in files:
                 if artifact['name'].endswith('.py'):
                     try:ast.parse(artifact['sql'])

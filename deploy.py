@@ -6,6 +6,9 @@ default catalog/schema. Execution stops at the first failed statement.
 Notebooks, workflow templates, plans and reports are never executed.
 """
 from datetime import datetime, timezone
+import ast
+import base64
+from pathlib import PurePosixPath
 import re
 import threading
 import time
@@ -264,6 +267,61 @@ def handle_existing(statement, mode):
     return fixed, note
 
 
+NOTEBOOK_ROOT = 'crosslake_migration'
+CELL_BREAK = '# COMMAND ----------'
+
+
+def deployable_notebooks(conversion):
+    """Python source notebooks generated from SSIS packages."""
+    return [{'name': item['name'], 'sql': item['sql']} for item in (conversion or {}).get('files', [])
+            if isinstance(item, dict) and isinstance(item.get('sql'), str) and item.get('kind') == 'notebook'
+            and str(item.get('name', '')).lower().endswith('.py')]
+
+
+def _quote(identifier):
+    return '`' + identifier.replace('`', '``') + '`'
+
+
+def notebook_for_workspace(source, catalog, schema):
+    """Add a cell after the review gate that selects the deploy target catalog/schema."""
+    from ssis_fixes import fix_sql_cells
+    from bladebridge import GUARD
+    if 'dbutils.widgets.get("migration_reviewed") != "true"' not in source.split(CELL_BREAK,1)[0]:
+        source=GUARD+source.removeprefix('# Databricks notebook source').lstrip('\r\n')
+    source, sql_notes = fix_sql_cells(source)
+    fixes = ('Automatic SQL fixes: ' + ' | '.join(sql_notes) + '.') if sql_notes else None
+    if not (catalog or schema):
+        return source, fixes
+    lines = ['# Added by Deploy to Databricks: default catalog and schema from Databricks settings.']
+    if catalog:
+        lines.append('spark.sql('+repr('USE CATALOG '+_quote(catalog))+')')
+    if schema:
+        lines.append('spark.sql('+repr('USE SCHEMA '+_quote(schema))+')')
+    cell = '\n' + '\n'.join(lines) + '\n\n' + CELL_BREAK
+    at = source.find(CELL_BREAK)
+    fixed = source + '\n' + CELL_BREAK + cell if at < 0 else source[:at + len(CELL_BREAK)] + cell + source[at + len(CELL_BREAK):]
+    ast.parse(fixed)
+    target = '.'.join(x for x in (catalog, schema) if x)
+    note = f'Default namespace: {target}. Two-part names such as dbo.Stg_Customer keep their explicit schema; fully qualified names override these defaults.'
+    return fixed, ' '.join(x for x in (fixes, note) if x)
+
+
+def workspace_folder(folder):
+    if not isinstance(folder,str) or not re.fullmatch(r'/(?:Users|Shared|Workspace)/[^\x00-\x1f\x7f\\]{1,400}',folder):
+        raise ValueError('Notebook folder must be an absolute /Users, /Shared, or /Workspace path.')
+    if any(p in ('','.','..') for p in folder.split('/')[1:]):raise ValueError('Notebook folder contains an unsafe path segment.')
+    return folder
+
+
+def notebook_path(folder, name):
+    workspace_folder(folder)
+    if not isinstance(name,str) or '\\' in name or any(ord(c)<32 for c in name):raise ValueError('Unsafe notebook artifact path.')
+    path=PurePosixPath(name)
+    if path.is_absolute() or any(p in ('','.','..') or p.startswith('.') for p in name.split('/')) or path.suffix.lower()!='.py':raise ValueError('Unsafe notebook artifact path.')
+    relative=name.removeprefix('notebooks/').rsplit('.',1)[0]
+    return folder+'/'+relative
+
+
 def deployable_files(conversion):
     files = []
     for item in (conversion or {}).get('files', []):
@@ -292,23 +350,25 @@ class DeployService:
             raise ValueError('Open a converted run before deploying.')
         run = self.runs.get(run_id)
         files = deployable_files(run.get('conversion'))
-        if not files:
-            raise ValueError('This run has no converted .sql files to deploy. Notebooks and reports are not executed.')
+        notebooks = deployable_notebooks(run.get('conversion'))
+        if not files and not notebooks:
+            raise ValueError('This run has no converted .sql files or notebooks to deploy.')
         selected = payload.get('files')
         if selected is not None:
             if not isinstance(selected, list) or not all(isinstance(s, str) for s in selected):
                 raise ValueError('Invalid file selection.')
             wanted = set(selected)
             files = [f for f in files if f['name'] in wanted]
-            if not files:
-                raise ValueError('Select at least one converted .sql file.')
+            notebooks = [f for f in notebooks if f['name'] in wanted]
+            if not files and not notebooks:
+                raise ValueError('Select at least one converted file.')
         plan = []
         for f in files:
             for number, statement in enumerate(split_statements(f['sql']), 1):
                 fixed, count = strip_null_constraints(statement)
                 note = f'Removed {count} SQL Server style NULL column constraint(s); Databricks columns are nullable by default.' if count else None
                 plan.append({'file': f['name'], 'number': number, 'statement': fixed, 'note': note})
-        if not plan:
+        if not plan and not notebooks:
             raise ValueError('The selected files contain no SQL statements.')
         mode = payload.get('existing', 'skip')
         if mode not in EXISTING_MODES:
@@ -327,15 +387,32 @@ class DeployService:
                                     'statement': f'CREATE SCHEMA IF NOT EXISTS {schema}',
                                     'note': f'Added automatically: the SQL creates objects in schema {schema}. Does nothing if it already exists.'})
             plan = schemas + plan
+        folder = payload.get('notebook_folder') or ''
+        if folder:workspace_folder(folder)
+        elif not isinstance(folder,str):raise ValueError('Notebook folder must be text.')
+        overwrite=payload.get('overwrite_notebooks',False)
+        if not isinstance(overwrite,bool):raise ValueError('overwrite_notebooks must be true or false.')
+        destinations=set()
+        public = self.settings.public()
+        for f in notebooks:
+            try:ast.parse(f['sql'])
+            except SyntaxError as exc:raise ValueError('Notebook syntax must be repaired before import: '+f['name']) from exc
+            content, note = notebook_for_workspace(f['sql'], public.get('catalog'), public.get('schema'))
+            where = notebook_path(folder or f'/Users/<you>/{NOTEBOOK_ROOT}', f['name'])
+            if where.casefold() in destinations:raise ValueError('Duplicate notebook import destination.')
+            destinations.add(where.casefold())
+            plan.append({'file': f['name'], 'number': 1, 'action': 'notebook', 'statement': content, 'path': where,
+                         'folder': folder, 'overwrite':overwrite, 'preview_text': f'Import notebook to {where} ('+('overwrite enabled' if overwrite else 'fail if notebook already exists')+')',
+                         'note': ' '.join(x for x in ('Imported only, not run. Review code, dependencies and findings in Databricks before setting migration_reviewed=true.', note) if x)})
         if len(plan) > MAX_STATEMENTS:
             raise ValueError(f'Too many statements ({len(plan)}). Deploy at most {MAX_STATEMENTS} at a time by selecting fewer files.')
-        return run_id, [f['name'] for f in files], plan
+        return run_id, [f['name'] for f in files + notebooks], plan
 
     def preview(self, payload):
         run_id, names, plan = self._plan(payload)
         public = self.settings.public()
         return {'run_id': run_id, 'files': names, 'statement_count': len(plan),
-                'statements': [{'file': p['file'], 'number': p['number'], 'preview': p['statement'][:400], 'note': p['note']} for p in plan],
+                'statements': [{'file': p['file'], 'number': p['number'], 'preview': p.get('preview_text') or p['statement'][:400], 'note': p['note']} for p in plan],
                 'adjusted': sum(1 for p in plan if p['note']),
                 'target': {'warehouse_id': public['warehouse_id'], 'catalog': public['catalog'] or '(warehouse default)',
                            'schema': public['schema'] or '(warehouse default)'},
@@ -348,7 +425,7 @@ class DeployService:
         run_id, names, plan = self._plan(payload)
         keep_going = payload.get('on_error', 'stop') == 'continue'
         config, token, _ = self.settings._credentials(payload)
-        if not config['warehouse_id']:
+        if not config['warehouse_id'] and any(p.get('action') != 'notebook' for p in plan):
             raise ValueError('Select and save a SQL warehouse in Databricks settings first.')
         with self.lock:
             if self.active and self.jobs[self.active]['status'] in ('queued', 'running'):
@@ -358,7 +435,7 @@ class DeployService:
                    'target': {'warehouse_id': config['warehouse_id'], 'catalog': config['catalog'], 'schema': config['schema']},
                    'files': names, 'total': len(plan), 'completed': 0, 'failed': 0, 'continue_on_error': keep_going,
                    'cancel_requested': False, 'message': 'Queued.',
-                   'statements': [{'file': p['file'], 'number': p['number'], 'preview': p['statement'][:400], 'note': p['note'],
+                   'statements': [{'file': p['file'], 'number': p['number'], 'preview': p.get('preview_text') or p['statement'][:400], 'note': p['note'],
                                    'status': 'pending', 'statement_id': None, 'error': None, 'seconds': None} for p in plan]}
             self.jobs[job_id] = job
             self.active = job_id
@@ -373,7 +450,7 @@ class DeployService:
             job = self.jobs.get(job_id)
             if job is None:
                 raise KeyError('Deployment not found. Deployment progress is kept only until the server restarts.')
-            return {k: (v if k != 'statements' else [dict(s) for s in v]) for k, v in job.items()}
+            return {k: (v if k != 'statements' else [dict(s) for s in v]) for k, v in job.items() if not k.startswith('_')}
 
     def latest(self):
         with self.lock:
@@ -422,7 +499,10 @@ class DeployService:
                     break
                 self._set_statement(job_id, index, status='running')
                 begun = self.clock()
-                state, statement_id, error = self._run_statement(job_id, config, token, item['statement'])
+                if item.get('action') == 'notebook':
+                    state, statement_id, error = self._import_notebook(job_id, config, token, item)
+                else:
+                    state, statement_id, error = self._run_statement(job_id, config, token, item['statement'])
                 self._set_statement(job_id, index, status=state, statement_id=statement_id, error=error,
                                     seconds=round(self.clock() - begun, 1))
                 if state == 'succeeded':
@@ -450,13 +530,41 @@ class DeployService:
                 summary = (f'{len(failures)} statement(s) failed and the rest ran: ' + ', '.join(failures[:10])
                            + (' …' if len(failures) > 10 else '') + '. See the errors below.')
             elif final == 'succeeded':
-                summary = f'All {done} statements ran successfully.'
+                summary = f'All {done} deployment actions completed successfully. Imported notebooks were not executed.'
             for s in job['statements']:
                 if s['status'] == 'pending':
                     s['status'] = 'skipped'
             run_id = job['run_id']
-            self._event(run_id, f'Deployment {final}: {done} of {len(plan)} statements succeeded. {summary}')
+            self._event(run_id, f'Deployment {final}: {done} of {len(plan)} actions succeeded. {summary}')
             job.update(status=final, finished_at=stamp(), message=summary)
+
+    def _import_notebook(self, job_id, config, token, item):
+        try:
+            folder = item.get('folder')
+            if not folder:
+                with self.lock:
+                    folder = self.jobs[job_id].get('_home')
+                if not folder:
+                    me = self._call(config, token, 'GET', '/api/2.0/preview/scim/v2/Me')
+                    user = me.get('userName') if isinstance(me, dict) else None
+                    if not isinstance(user, str) or not user or '/' in user:
+                        return 'failed', None, 'Could not determine your workspace user folder. Enter a notebook folder instead.'
+                    folder = f'/Users/{user}/{NOTEBOOK_ROOT}'
+                    with self.lock:
+                        self.jobs[job_id]['_home'] = folder
+            path = notebook_path(folder, item['file'])
+            self._call(config, token, 'POST', '/api/2.0/workspace/mkdirs', {'path': path.rsplit('/', 1)[0]})
+            if self._cancelled(job_id):return 'cancelled',None,None
+            self._call(config, token, 'POST', '/api/2.0/workspace/import',
+                       {'path': path, 'format': 'SOURCE', 'language': 'PYTHON', 'overwrite': item.get('overwrite',False),
+                        'content': base64.b64encode(item['statement'].encode('utf-8')).decode('ascii')})
+            with self.lock:
+                for s in self.jobs[job_id]['statements']:
+                    if s['file'] == item['file'] and s['status'] == 'running':
+                        s['preview'] = f'Imported notebook to {path}'
+            return 'succeeded', None, None
+        except DatabricksError as exc:
+            return 'failed', None, f'Notebook import failed: {exc}'
 
     def _run_statement(self, job_id, config, token, statement):
         body = {'warehouse_id': config['warehouse_id'], 'statement': statement, 'wait_timeout': '30s',
