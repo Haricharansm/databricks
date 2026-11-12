@@ -24,7 +24,7 @@ class ValidationStore:
         if run['status'] in ACTIVE:raise Conflict('Wait for the active run to finish before changing or comparing validation cases.')
         row=db.execute('SELECT * FROM sources WHERE run_id=? AND name=?',(run_id,source)).fetchone()
         if row is None:raise KeyError('Source not found in this run.')
-        if row['kind'] not in ('sql','sql_script','stored_procedure'):raise ValueError('This workbench currently supports SQL files and stored procedures. SSIS pipeline validation is a later step.')
+        if row['kind'] not in ('sql','sql_script','stored_procedure','ssis'):raise ValueError('Select a SQL source or SSIS package. SSIS cases validate an explicit output query, not the entire pipeline.')
         return row
 
     def save_case(self,run_id,payload,case_id=None):
@@ -76,7 +76,7 @@ class ValidationStore:
             case['attempt_total']=db.execute('SELECT COUNT(*) FROM validation_attempts WHERE case_id=?',(case_id,)).fetchone()[0]
         return case
 
-    def evaluate_case(self,run_id,case_id,payload):
+    def evaluate_case(self,run_id,case_id,payload,*,target_execution=None):
         from monitoring import now,encoded,Conflict
         if not isinstance(payload,dict):raise ValueError('Invalid comparison request.')
         expected=dataset(payload.get('expected'));actual=dataset(payload.get('actual'))
@@ -101,6 +101,10 @@ class ValidationStore:
                       source_conversion_status=source['status'],source_review=source['review'],source_snapshot={'source_sha256':source_hash,'run_artifacts':artifact_hashes},provenance={**evidence,'verified_by_app':False},
                       inputs={side:{'format':data['format'],'bytes':len(data['content'].encode()),'sha256':hashlib.sha256(data['content'].encode()).hexdigest()} for side,data in [('expected',expected),('actual',actual)]},
                       validated_on_databricks=False,deployable=False)
+        if target_execution is not None:
+            report['target_execution']=target_execution
+            report['executed_by_app']=True
+            report['limitations']=['Only the recorded target query was executed by the app. Source export provenance is user supplied. This is not whole-pipeline validation.']
         with self.db() as db:
             current=db.execute('SELECT version,source FROM validation_cases WHERE id=? AND run_id=?',(case_id,run_id)).fetchone()
             if current is None:raise KeyError('Test case no longer exists.')
@@ -110,7 +114,7 @@ class ValidationStore:
             db.execute('INSERT INTO validation_attempts(id,case_id,run_id,case_version,created_at,inputs_json,report_json) VALUES(?,?,?,?,?,?,?)',
                        (attempt_id,case_id,run_id,version,timestamp,encoded({'expected':expected,'actual':actual}),encoded(report)))
             db.execute('UPDATE runs SET updated_at=? WHERE id=?',(timestamp,run_id))
-            self.event(db,run_id,f'Uploaded-result comparison {report["status"]}: {case["title"]}, version {version}. No SQL was executed.',case['source'])
+            self.event(db,run_id,f'{"Databricks target" if target_execution else "Uploaded-result"} comparison {report["status"]}: {case["title"]}, version {version}. '+('Target query executed; source provenance is user supplied.' if target_execution else 'No SQL was executed.'),case['source'])
         return report
 
     def validation_attempt(self,run_id,attempt_id,include_inputs=False):

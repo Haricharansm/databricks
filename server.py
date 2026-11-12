@@ -14,6 +14,7 @@ from core import MAX_BYTES, assess, convert, engine_status, validate_files
 from monitoring import RunService, Conflict
 from databricks_settings import DatabricksSettings
 from deploy import DeployService
+from accelerator import Toolkit
 
 ROOT = Path(__file__).parent
 
@@ -23,6 +24,7 @@ class AppServer(ThreadingHTTPServer):
         self.runs=run_service or RunService(os.environ.get("MIGRATION_DB_PATH",str(ROOT/".data"/"migration.sqlite3")))
         self.databricks=DatabricksSettings(self.runs)
         self.deploy=DeployService(self.databricks,self.runs)
+        self.toolkit=Toolkit(self.runs,self.databricks)
     def server_close(self):
         super().server_close()
         if hasattr(self,'databricks'):
@@ -53,6 +55,12 @@ class Handler(SimpleHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
+            if path=='/api/toolkit/checks':return self.respond(200,self.server.toolkit.checks())
+            if path=='/api/toolkit/suite':return self.respond(200,self.server.toolkit.suite())
+            toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|operations|package)',path)
+            if toolkit:
+                run_id,action=toolkit.groups()
+                return self.respond(200,getattr(self.server.toolkit,action)(run_id))
             if path=='/api/databricks/settings':return self.respond(200,self.server.databricks.public())
             if path=='/api/databricks/deploy/latest':return self.respond(200,{'deployment':self.server.deploy.latest()})
             deployment=re.fullmatch(r'/api/databricks/deploy/([a-f0-9]{32})',path)
@@ -76,7 +84,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -93,6 +101,10 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|query|attach|refresh)',self.path)
+            if toolkit:
+                run_id,action=toolkit.groups()
+                return self.respond(200,getattr(self.server.toolkit,action)(run_id,payload))
             if self.path.startswith('/api/databricks/'):
                 actions={'/api/databricks/settings':self.server.databricks.save,
                          '/api/databricks/test-workspace':self.server.databricks.test_workspace,
@@ -137,7 +149,7 @@ class Handler(SimpleHTTPRequestHandler):
                         path = PurePosixPath(relative)
                         if path.is_absolute() or '..' in path.parts or any(p.startswith('.') for p in path.parts):
                             raise ValueError('Unsafe export path.')
-                        if path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md'):
+                        if path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md', '.yml'):
                             raise ValueError('Unsupported export artifact type.')
                         if relative.casefold() in seen:
                             raise ValueError('Duplicate export path.')

@@ -2,7 +2,7 @@
 (()=>{
 let run=null,currentCase=null,columns=[],dirty=true,working=false,generation=0,activeReport=null;
 const active=new Set(['uploaded','assessing','queued','converting']);
-const supported=source=>['sql','sql_script','stored_procedure'].includes(source.kind);
+const supported=source=>['sql','sql_script','stored_procedure','ssis'].includes(source.kind);
 function notify(text,error=false){$('wb-message').textContent=text;$('wb-message').className=error?'monitor-error':'section-description';}
 async function get(path){const response=await fetch(path);const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load validation data.');return data;}
 function base(){return '/api/runs/'+run.id+'/validation';}
@@ -63,13 +63,13 @@ async function loadAttempt(id){
 function renderResult(report,stale){
   const root=$('wb-result');root.hidden=false;root.replaceChildren();
   const header=el('div',undefined,'wb-result-header');header.append(el('span',report.status==='passed'?'Result snapshots matched':report.status==='failed'?'Result snapshots differ':'Comparison input error','run-state comparison-'+report.status),el('strong',`Test version ${report.case_version}${stale?' · superseded definition':''}`));root.append(header);
-  root.append(el('p',`Compared ${new Date(report.created_at).toLocaleString()} · no SQL executed · provenance supplied manually`,'wb-result-note'));
+  root.append(el('p',`Compared ${new Date(report.created_at).toLocaleString()} · ${report.target_execution?"target query executed in Databricks; source export provenance supplied manually":"no SQL executed; provenance supplied manually"}`,'wb-result-note'));
   if(report.error)root.append(el('p',report.error,'monitor-error'));
   const table=el('table',undefined,'wb-table'),head=el('thead'),heading=el('tr');['Check','Result','Details'].forEach(t=>heading.append(el('th',t)));head.append(heading);table.append(head);const body=el('tbody');
   report.checks.forEach(check=>{const row=el('tr');row.append(el('td',check.name.replaceAll('_',' ')),el('td',check.passed?'Matched':'Failed'));const detail=el('td');const {name,passed,...rest}=check;detail.append(el('pre',JSON.stringify(rest,null,2)));row.append(detail);body.append(row);});table.append(body);root.append(table);
   if(report.duplicate_rows)root.append(el('p',`Exact duplicate rows: expected ${report.duplicate_rows.expected}, actual ${report.duplicate_rows.actual}. Value mismatch count: ${report.mismatch_count}. Counts alone do not establish a match.`,'wb-result-note'));
   if(report.mismatches.length){const detail=el('details',undefined,'wb-result-details');detail.open=true;detail.append(el('summary',`Mismatch samples (up to 20; total ${report.mismatch_count})`),el('pre',JSON.stringify(report.mismatches,null,2)));root.append(detail);}
-  const evidence=el('details',undefined,'wb-result-details');evidence.append(el('summary','Definition, input hashes, and recorded evidence'),el('pre',JSON.stringify({definition:report.definition,inputs:report.inputs,provenance:report.provenance,source_conversion_status:report.source_conversion_status,source_snapshot:report.source_snapshot},null,2)));root.append(evidence,el('p',report.limitations,'wb-result-note'));
+  const evidence=el('details',undefined,'wb-result-details');evidence.append(el('summary','Definition, input hashes, and recorded evidence'),el('pre',JSON.stringify({definition:report.definition,inputs:report.inputs,provenance:report.provenance,target_execution:report.target_execution,source_conversion_status:report.source_conversion_status,source_snapshot:report.source_snapshot},null,2)));root.append(evidence,el('p',report.limitations,'wb-result-note'));
 }
 async function selectRun(value){
   const changed=run?.id!==value?.id;run=value;

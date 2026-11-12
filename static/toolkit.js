@@ -1,0 +1,18 @@
+'use strict';
+(()=>{
+let selected=null,operations=[],working=false;
+async function get(path){const r=await fetch(path),v=await r.json();if(!r.ok)throw Error(v.error||'Request failed');return v;}
+function show(v){$('tk-output').textContent=JSON.stringify(v,null,2);}
+function base(){if(!selected)throw Error('Load a saved migration run first.');return '/api/runs/'+selected.id+'/toolkit/';}
+async function settings(){return get('/api/databricks/settings');}
+function action(id,fn){$(id).onclick=async()=>{if(working)return;working=true;$(id).disabled=true;try{$('tk-message').textContent='Working…';await fn();$('tk-message').textContent='Done.';}catch(e){$('tk-message').textContent=e.message;}finally{working=false;$(id).disabled=false;}};}
+action('tk-checks',async()=>show(await get('/api/toolkit/checks')));
+action('tk-scenarios',async()=>show((await get('/api/toolkit/suite')).scenarios));
+action('tk-suite',async()=>{const suite=await get('/api/toolkit/suite');const run=await api('/api/runs',{label:'Representative migration suite',files:suite.files});show({run_id:run.id,scenarios:suite.scenarios,note:suite.note});$('tk-message').textContent='Suite saved. Select it in Migration monitor to assess and convert.';});
+action('tk-load',async()=>{selected=window.monitor?.selectedRun();if(!selected)throw Error('Select a run in Migration monitor first.');$('tk-run').textContent='Loaded: '+selected.label+' · '+selected.id;const deps=await get(base()+'dependencies');const existing=new Map(deps.mappings.map(m=>[JSON.stringify([m.source,m.name,m.kind]),m]));const rows=deps.references.map(r=>existing.get(JSON.stringify([r.source,r.name,r.kind]))||{source:r.source,name:r.name,kind:r.kind,target:'',notes:''});$('tk-mappings').value=JSON.stringify([...new Map(rows.map(r=>[JSON.stringify([r.source,r.name,r.kind]),r])).values()],null,2);const cases=await get('/api/runs/'+selected.id+'/validation');$('tk-case').replaceChildren(...cases.cases.map(c=>{const o=el('option',c.definition.title);o.value=c.id;return o;}));operations=(await get(base()+'operations')).operations;show({limitations:deps.limitations,operations});});
+action('tk-save',async()=>show(await api(base()+'dependencies',{mappings:JSON.parse($('tk-mappings').value)})));
+action('tk-package',async()=>{const v=await get(base()+'package');const blob=await api('/api/export',v,true);download('migration-review-package.zip',blob,'application/zip');});
+action('tk-query',async()=>{const b=base(),file=$('tk-expected').files[0];if(!file)throw Error('Select the SQL Server export file.');if(file.size>2*1024*1024)throw Error('Export must be under 2 MB.');const caseId=$('tk-case').value;if(!caseId)throw Error('Save a validation case and load the run again.');const c=await get('/api/runs/'+selected.id+'/validation/cases/'+caseId);const config=await settings();show(await api(b+'query',{case_id:caseId,version:c.version,revision:config.revision,allow_compute:$('tk-consent').checked,expected_ref:$('tk-reference').value,expected:{format:file.name.toLowerCase().endsWith('.json')?'json':'csv',content:new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer())}}));operations=(await get(b+'operations')).operations;});
+action('tk-attach',async()=>{const config=await settings();show(await api(base()+'attach',{revision:config.revision,remote_id:$('tk-job').value}));operations=(await get(base()+'operations')).operations;});
+action('tk-refresh',async()=>{const b=base(),config=await settings();operations=(await get(b+'operations')).operations;const results=[];for(const op of operations){try{results.push(await api(b+'refresh',{id:op.id,revision:config.revision}));}catch(e){results.push({id:op.id,error:e.message});}}show(results);});
+})();

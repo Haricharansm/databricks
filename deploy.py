@@ -454,9 +454,9 @@ class DeployService:
             for s in job['statements']:
                 if s['status'] == 'pending':
                     s['status'] = 'skipped'
-            job.update(status=final, finished_at=stamp(), message=summary)
             run_id = job['run_id']
-        self._event(run_id, f'Deployment {final}: {done} of {len(plan)} statements succeeded. {summary}')
+            self._event(run_id, f'Deployment {final}: {done} of {len(plan)} statements succeeded. {summary}')
+            job.update(status=final, finished_at=stamp(), message=summary)
 
     def _run_statement(self, job_id, config, token, statement):
         body = {'warehouse_id': config['warehouse_id'], 'statement': statement, 'wait_timeout': '30s',
