@@ -1,0 +1,5 @@
+interval_start,interval_end,query_text,execution_count,total_duration_ms,total_cpu_ms,logical_reads,application,user
+2026-11-13T08:00:00-06:00,2026-11-13T09:00:00-06:00,SELECT * FROM dbo.CustomerTotals;,25,500,200,120,Dashboard,reporting
+2026-11-13T09:00:00-06:00,2026-11-13T10:00:00-06:00,SELECT * FROM dbo.CustomerTotals;,40,1000,450,180,Dashboard,reporting
+2026-11-13T08:00:00-06:00,2026-11-13T09:00:00-06:00,"SELECT CustomerId, Amount FROM dbo.Customers WHERE Region = 'East';",15,300,100,60,ETL,migration
+2026-11-13T09:00:00-06:00,2026-11-13T10:00:00-06:00,SELECT * FROM dbo.ExternalOrders WHERE Description LIKE '%priority%';,5,1400,850,1200,ETL,migration

@@ -1,5 +1,6 @@
 """Dependency-free local web server. Run behind authenticated hosting for team use."""
 import argparse
+import csv
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
@@ -16,6 +17,7 @@ from databricks_settings import DatabricksSettings
 from deploy import DeployService
 from accelerator import Toolkit
 from lakeflow import LakeflowService
+from insights import InsightsService
 
 ROOT = Path(__file__).parent
 
@@ -27,6 +29,7 @@ class AppServer(ThreadingHTTPServer):
         self.deploy=DeployService(self.databricks,self.runs)
         self.toolkit=Toolkit(self.runs,self.databricks)
         self.lakeflow=LakeflowService(self.runs)
+        self.insights=InsightsService(self.runs)
     def server_close(self):
         super().server_close()
         if hasattr(self,'databricks'):
@@ -57,6 +60,8 @@ class Handler(SimpleHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
+            insights=re.fullmatch(r'/api/runs/([a-f0-9]{32})/insights(/export)?',path)
+            if insights:return self.respond(200,self.server.insights.export(insights.group(1)) if insights.group(2) else self.server.insights.get(insights.group(1)))
             lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow(/bundle)?',path)
             if lakeflow:return self.respond(200,self.server.lakeflow.generate(lakeflow.group(1)) if lakeflow.group(2) else self.server.lakeflow.get(lakeflow.group(1)))
             if path=='/api/toolkit/checks':return self.respond(200,self.server.toolkit.checks())
@@ -89,7 +94,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -106,6 +111,10 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            insights=re.fullmatch(r'/api/runs/([a-f0-9]{32})/insights/(scope|workload|clear-workload)',self.path)
+            if insights:
+                run_id,action=insights.groups()
+                return self.respond(200,self.server.insights.clear_workload(run_id,payload) if action=='clear-workload' else self.server.insights.save(run_id,payload,action=='workload'))
             lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow',self.path)
             if lakeflow:return self.respond(200,self.server.lakeflow.save(lakeflow.group(1),payload))
             toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|query|attach|refresh)',self.path)
@@ -156,7 +165,7 @@ class Handler(SimpleHTTPRequestHandler):
                         path = PurePosixPath(relative)
                         if path.is_absolute() or '..' in path.parts or any(p.startswith('.') for p in path.parts):
                             raise ValueError('Unsafe export path.')
-                        if path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md', '.yml'):
+                        if path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md', '.yml', '.csv', '.html'):
                             raise ValueError('Unsupported export artifact type.')
                         if relative.casefold() in seen:
                             raise ValueError('Duplicate export path.')
@@ -173,7 +182,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self.respond(409, {'error': str(exc)})
         except KeyError as exc:
             return self.respond(404, {'error': str(exc)})
-        except (ValueError, UnicodeError) as exc:
+        except (ValueError, UnicodeError, csv.Error) as exc:
             return self.respond(400, {'error': str(exc)})
         except RuntimeError as exc:
             return self.respond(503, {'error': str(exc)})
