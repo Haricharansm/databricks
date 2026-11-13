@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts" DTS:refId="Package" DTS:ExecutableType="Microsoft.Package" DTS:ObjectName="DirectCopy">
+  <DTS:Executables>
+    <DTS:Executable DTS:refId="Package\CopyCustomers" DTS:ObjectName="CopyCustomers" DTS:ExecutableType="Microsoft.Pipeline">
+      <DTS:ObjectData><pipeline><components>
+        <component refId="Package\CopyCustomers\Source" name="Customers source" componentClassID="Microsoft.OLEDBSource"><properties><property name="OpenRowset">dbo.Customers</property></properties><outputs><output refId="Package\CopyCustomers\Source.Outputs[Rows]" /></outputs></component>
+        <component refId="Package\CopyCustomers\Destination" name="Customers destination" componentClassID="Microsoft.OLEDBDestination"><inputs><input refId="Package\CopyCustomers\Destination.Inputs[Rows]" /></inputs></component>
+      </components><paths><path startId="Package\CopyCustomers\Source.Outputs[Rows]" endId="Package\CopyCustomers\Destination.Inputs[Rows]" /></paths></pipeline></DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+</DTS:Executable>

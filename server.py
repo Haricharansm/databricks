@@ -15,6 +15,7 @@ from monitoring import RunService, Conflict
 from databricks_settings import DatabricksSettings
 from deploy import DeployService
 from accelerator import Toolkit
+from lakeflow import LakeflowService
 
 ROOT = Path(__file__).parent
 
@@ -25,6 +26,7 @@ class AppServer(ThreadingHTTPServer):
         self.databricks=DatabricksSettings(self.runs)
         self.deploy=DeployService(self.databricks,self.runs)
         self.toolkit=Toolkit(self.runs,self.databricks)
+        self.lakeflow=LakeflowService(self.runs)
     def server_close(self):
         super().server_close()
         if hasattr(self,'databricks'):
@@ -55,6 +57,8 @@ class Handler(SimpleHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
+            lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow(/bundle)?',path)
+            if lakeflow:return self.respond(200,self.server.lakeflow.generate(lakeflow.group(1)) if lakeflow.group(2) else self.server.lakeflow.get(lakeflow.group(1)))
             if path=='/api/toolkit/checks':return self.respond(200,self.server.toolkit.checks())
             if path=='/api/toolkit/suite':return self.respond(200,self.server.toolkit.suite())
             toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|operations|package)',path)
@@ -80,11 +84,12 @@ class Handler(SimpleHTTPRequestHandler):
             if match:
                 summary=parse_qs(urlsplit(self.path).query).get('summary',['0'])[0]=='1'
                 return self.respond(200,self.server.runs.get(match.group(1),not summary))
+        except Conflict as exc:return self.respond(409,{'error':str(exc)})
         except KeyError as exc:return self.respond(404,{'error':str(exc)})
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -101,6 +106,8 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow',self.path)
+            if lakeflow:return self.respond(200,self.server.lakeflow.save(lakeflow.group(1),payload))
             toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|query|attach|refresh)',self.path)
             if toolkit:
                 run_id,action=toolkit.groups()

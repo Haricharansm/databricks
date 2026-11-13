@@ -20,3 +20,4 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #toolkit button{color:var(--navy);background:#edf1f8}#toolkit button:hover:not(:disabled){border-color:var(--orange);background:var(--orange-soft)}
 .run-state.completed,.run-state.converted,.comparison-passed{background:#e5f2e9;color:#2f6c43}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.lf-task{padding:18px;margin:16px 0;border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:7px;background:#fbfcfe;overflow-wrap:anywhere}.lf-task>strong{display:block;font-size:12px}.lf-task textarea{display:block;width:100%;padding:10px;border:1px solid var(--line);border-radius:5px}#lf-results pre{max-height:350px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}#lf-results details{padding:12px 0;border-top:1px solid var(--line)}#lf-message:empty{display:none}
