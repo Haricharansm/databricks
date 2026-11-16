@@ -18,6 +18,7 @@ from deploy import DeployService
 from accelerator import Toolkit
 from lakeflow import LakeflowService
 from insights import InsightsService
+from automation import AutomationService
 
 ROOT = Path(__file__).parent
 
@@ -30,8 +31,10 @@ class AppServer(ThreadingHTTPServer):
         self.toolkit=Toolkit(self.runs,self.databricks)
         self.lakeflow=LakeflowService(self.runs)
         self.insights=InsightsService(self.runs)
+        self.automation=AutomationService(self.runs,self.databricks,packager=self.toolkit.package)
     def server_close(self):
         super().server_close()
+        if hasattr(self,'automation'):self.automation.close()
         if hasattr(self,'databricks'):
             with self.databricks.lock:self.databricks.session_token=None
         if hasattr(self,'runs'):self.runs.close()
@@ -60,6 +63,10 @@ class Handler(SimpleHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
+            automation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/automation(?:/suites/([a-f0-9]{32}))?',path)
+            if automation:
+                run_id,suite_id=automation.groups()
+                return self.respond(200,self.server.automation.status(run_id,suite_id) if suite_id else self.server.automation.get(run_id))
             insights=re.fullmatch(r'/api/runs/([a-f0-9]{32})/insights(/export)?',path)
             if insights:return self.respond(200,self.server.insights.export(insights.group(1)) if insights.group(2) else self.server.insights.get(insights.group(1)))
             lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow(/bundle)?',path)
@@ -94,7 +101,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/automation.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -111,6 +118,10 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            automation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/automation/(baseline|start|cancel|export)',self.path)
+            if automation:
+                run_id,action=automation.groups()
+                return self.respond(202 if action=='start' else 200,getattr(self.server.automation,action)(run_id,payload))
             insights=re.fullmatch(r'/api/runs/([a-f0-9]{32})/insights/(scope|workload|clear-workload)',self.path)
             if insights:
                 run_id,action=insights.groups()
@@ -163,9 +174,10 @@ class Handler(SimpleHTTPRequestHandler):
                         relative = item['name'].replace('\\', '/')
                         from pathlib import PurePosixPath
                         path = PurePosixPath(relative)
-                        if path.is_absolute() or '..' in path.parts or any(p.startswith('.') for p in path.parts):
+                        ci_path=relative in ('.github/workflows/crosslake-suite.yml','.gitattributes')
+                        if path.is_absolute() or '..' in path.parts or any(p.startswith('.') for p in path.parts) and not ci_path:
                             raise ValueError('Unsafe export path.')
-                        if path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md', '.yml', '.csv', '.html'):
+                        if not ci_path and path.suffix.lower() not in ('.sql', '.py', '.json', '.ipynb', '.txt', '.md', '.yml', '.csv', '.html'):
                             raise ValueError('Unsupported export artifact type.')
                         if relative.casefold() in seen:
                             raise ValueError('Duplicate export path.')

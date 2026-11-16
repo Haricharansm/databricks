@@ -1,0 +1,98 @@
+name: Crosslake golden validation
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Fixture replay or live Databricks validation
+        type: choice
+        options: [databricks, fixtures]
+        default: databricks
+      deploy_dev:
+        description: Deploy the reviewed included migration bundle to dev before testing
+        type: boolean
+        default: false
+      job_resource:
+        description: Bundle job resource key (required when deploying dev)
+        type: string
+      target_job:
+        description: Existing Databricks job ID (optional when not deploying)
+        type: string
+permissions:
+  contents: read
+jobs:
+  fixtures:
+    if: inputs.mode == 'fixtures'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Compare supplied fixtures only
+        run: python ci_runner.py crosslake-suite.json --mode fixtures --output suite-results
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: fixture-comparison-results
+          path: suite-results/
+          retention-days: 7
+  databricks:
+    if: inputs.mode == 'databricks'
+    environment: crosslake-dev
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+      DATABRICKS_CATALOG: ${{ vars.DATABRICKS_CATALOG }}
+      DATABRICKS_SCHEMA: ${{ vars.DATABRICKS_SCHEMA }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - uses: databricks/setup-cli@2da6132749245fbffb3c10d57cec219de3669967
+        with:
+          version: '1.26.0'
+      - name: Verify golden data and candidate hashes before workspace actions
+        run: python ci_runner.py crosslake-suite.json --check-only
+      - name: Require the reviewed candidate job key before deployment
+        if: inputs.deploy_dev
+        env:
+          JOB_RESOURCE: ${{ inputs.job_resource }}
+        run: test -n "$JOB_RESOURCE"
+      - name: Optionally deploy the candidate bundle into dev
+        if: inputs.deploy_dev
+        working-directory: migration
+        run: |
+          databricks bundle validate -t dev
+          databricks bundle deploy -t dev
+      - name: Resolve candidate job and validate outputs
+        env:
+          DEPLOY_DEV: ${{ inputs.deploy_dev }}
+          JOB_RESOURCE: ${{ inputs.job_resource }}
+          TARGET_JOB: ${{ inputs.target_job }}
+        shell: bash
+        run: |
+          if [[ "$DEPLOY_DEV" == "true" ]]; then
+            test -n "$JOB_RESOURCE"
+            (cd migration && databricks bundle summary -t dev --output json) > candidate-summary.json
+            TARGET_JOB=$(python -c 'import json,os; print(json.load(open("candidate-summary.json"))["resources"]["jobs"][os.environ["JOB_RESOURCE"]]["id"])')
+          fi
+          args=(--mode databricks --allow-compute --output suite-results)
+          if [[ -n "$TARGET_JOB" ]]; then
+            [[ "$TARGET_JOB" =~ ^[0-9]+$ ]]
+            args+=(--target-job "$TARGET_JOB" --allow-target-job)
+          fi
+          python ci_runner.py crosslake-suite.json "${args[@]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: databricks-validation-results
+          path: suite-results/
+          retention-days: 7
+

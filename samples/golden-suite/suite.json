@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "fixture_ref": "synthetic-golden-sales-v1 (no live database)",
+  "artifact_fingerprint": "synthetic-example-only",
+  "cases": [
+    {
+      "case_id": "sales",
+      "case_version": 1,
+      "baseline_version": 1,
+      "definition": {
+        "title": "Synthetic duplicates, NULLs and decimals",
+        "source": "sales.sql",
+        "source_sql": "SELECT id, amount FROM dbo.Sales",
+        "target_sql": "SELECT id, amount FROM sales",
+        "parameters": "{}",
+        "columns": [
+          {
+            "name": "id",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "name": "amount",
+            "type": "decimal",
+            "nullable": true
+          }
+        ],
+        "mode": "unordered"
+      },
+      "expected": {
+        "format": "csv",
+        "content": "id,amount\n1,10.25\n1,10.25\n2,\\N\n"
+      },
+      "expected_sha256": "e4993b75ad47147db2653f6fe55bc3891d012af2410ca4c27bf5b51e389cbd98",
+      "expected_ref": "Synthetic fixture; not an export from SQL Server",
+      "actual": {
+        "format": "json",
+        "content": "[{\"id\": 2, \"amount\": null}, {\"id\": 1, \"amount\": \"10.25\"}, {\"id\": 1, \"amount\": \"10.25\"}]"
+      }
+    }
+  ]
+}

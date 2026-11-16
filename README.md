@@ -340,3 +340,66 @@ Runtime observations never prove unobserved code unused. An object without an up
 Scope choices and imported evidence persist in `.data/migration.sqlite3`, with versions to prevent stale-tab overwrites. Deleting a run cascades its evidence. Preserve `.data` during updates. Analysis is bounded at 3,000 statement units, 20,000 lexical tokens per unit, 8,000 graph nodes/object identities and 16,000 edges/references; reaching a bound marks the report incomplete. No parser, workload import, report generation or diagram executes SQL or calls Databricks.
 
 Use `samples/assessment` for a synthetic end-to-end demonstration and a read-only SQL Server Query Store export template. The template must be reviewed and run in your own source environment; live SQL Server telemetry has not been verified here.
+
+## Golden test automation and CI/CD
+
+The **Test automation** section runs saved validation cases as a versioned suite.
+Select a saved migration run, create cases in Validation workbench, load that run
+in Test automation, and upload a golden CSV/JSON baseline for each case. Record
+where the baseline came from and an input fixture/snapshot reference. CSV NULL is
+`\N`; JSON NULL is `null`. Baselines must satisfy each case's declared schema.
+Changing a case invalidates its baseline; changing artifacts or baselines marks
+previous suite evidence stale without rewriting its saved report.
+
+Choose a mode:
+
+* **Recorded fixtures:** replays the latest current comparison's target dataset
+  against the golden baseline without contacting SQL Server or Databricks.
+* **Databricks:** runs the declared target SELECT/WITH queries on the saved SQL
+  warehouse, optionally after an explicitly selected existing Databricks job.
+* **SQL Server + Databricks:** optionally runs an allowlisted SQL Agent/SSIS job,
+  queries SQL Server and compares its output to the golden baseline, then runs
+  the optional target job and compares target output against both golden and
+  source output. Source drift prevents the target job from starting.
+
+Live queries and each job start have separate consent controls. Source execution
+requires `pyodbc`, Microsoft ODBC Driver 18, and a connection string in
+`CROSSLAKE_SQLSERVER_CONNECTION_STRING` on the app host. For example, configure
+an encrypted connection with a dedicated least-privileged account outside the UI.
+Allow SQL Agent jobs by setting `CROSSLAKE_SQLSERVER_ALLOWED_JOBS` to a JSON array
+of exact approved names. Restrict those jobs to exclusive test use: SQL Agent does
+not return a unique execution token for `sp_start_job`, so concurrent external
+starts can make attribution uncertain. No arbitrary source commands are accepted.
+
+Each query result is bounded to 10,000 rows / 2 MB. Databricks inline results must
+be complete and single-chunk. Fully bind query values yourself and leave case
+parameters empty for automation. Naive timestamps require an explicit source SQL
+timezone conversion. Fixture preparation, input seeding, source/target snapshot
+alignment, and source-export provenance remain operator responsibilities.
+
+Suite history, stages, query IDs, job run IDs, hashes and comparison results are
+saved locally. Cancellation requests stop tracked work where supported; an app
+restart marks active suites interrupted and does not replay remote actions.
+Inspect recorded remote IDs after interruption because jobs may still be running.
+Suite passes never automatically approve source reviews or production deployment.
+
+**Download CI package** exports selected golden data, definitions, a standalone
+stdlib runner, JSON/JUnit reports and a manually triggered GitHub Actions workflow.
+Explicitly approve dataset inclusion and use an approved private repository for
+customer data. Optionally include the migration review bundle for protected dev
+bundle deployment; only enable generated notebook review flags after every source
+has been reviewed and approved. Configure the exported workflow's `crosslake-dev`
+environment and Databricks OIDC identity using its included README. This is a dev
+validation workflow; production promotion is outside this iteration.
+
+Try the synthetic offline example without credentials:
+
+```sh
+python ci_runner.py samples/golden-suite/suite.json --mode fixtures --output suite-results
+```
+
+The runner exits nonzero on comparison, configuration or execution failure.
+`--check-only` verifies manifest/baseline/candidate hashes without remote execution.
+Reports redact mismatch values and SQL by default; review all metadata before
+sharing. The repository CI runs local regression tests and this synthetic example;
+it does not validate connectivity or execution in your real environments.
