@@ -403,3 +403,24 @@ The runner exits nonzero on comparison, configuration or execution failure.
 Reports redact mismatch values and SQL by default; review all metadata before
 sharing. The repository CI runs local regression tests and this synthetic example;
 it does not validate connectivity or execution in your real environments.
+
+## Finding your way around Crosslake
+
+The navigation follows the work rather than the order features were added:
+
+1. **Start:** Overview → Add sources → Readiness report → Assessment studio.
+   Assessment and conversion can begin without a Databricks connection.
+2. **Build:** Conversion studio → optional Lakeflow studio for SSIS review bundles.
+   Use **Runs & reviews** to inspect saved source progress and approve code reviews.
+3. **Test & deliver:** configure Databricks settings when you need live access;
+   define cases/compare exported results in Validation workbench, then use Test
+   automation for golden suites. Review deployment options for your sandbox or
+   target environment and retain validation evidence before production use.
+4. **Manage:** Runs & reviews resumes saved work; Migration toolkit provides
+   dependency mappings, local checks, existing job tracking and packaging tools.
+
+Overview shows the selected saved run. Studios that offer **Load selected run**
+keep their own loaded context, so check that panel's run label before editing or
+executing. The sidebar highlights your location as you scroll. On smaller screens,
+use **Menu** to navigate; keyboard users can use **Skip to main content** and Escape
+to close the menu. Navigation does not bypass review or execution consent controls.

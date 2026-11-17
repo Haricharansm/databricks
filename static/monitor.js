@@ -71,6 +71,7 @@ function renderDetail(run,force=false){
   lastUpdated=run.id+run.updated_at;
   if(selectedRun?.id===run.id)selectedRun={...selectedRun,...run};else selectedRun=run;
   if(window.workbench)window.workbench.selectRun(selectedRun);
+  window.dispatchEvent(new CustomEvent('crosslake:run-selected',{detail:selectedRun}));
   $('run-detail').hidden=false;$('run-title').textContent=run.label;
   $('run-meta').textContent=`Run ${run.id.slice(0,8)} · created ${timestamp(run.created_at)} · ${stateLabel(run.status)} · phase duration ${duration(run.duration_seconds)}`;
   const progress=$('run-progress');progress.replaceChildren();
@@ -113,7 +114,7 @@ async function refresh(){
     const stats={runs:'runs',active:'active',blocked:'blocked',review:'awaiting_review',passed:'manual_passed'};
     for(const [id,key] of Object.entries(stats))$('mon-'+id).textContent=data.stats[key];
     const list=$('run-list');list.replaceChildren();
-    if(!data.runs.length)list.append(el('p','No matching runs. Add sources below and assess them to start.','empty-state'));
+    if(!data.runs.length)list.append(el('p','No matching runs. Use Add sources to upload files and assess readiness.','empty-state'));
     data.runs.forEach(run=>{
       const button=el('button',undefined,'history-row'+(run.id===selectedId?' selected':''));
       const title=el('span');title.append(el('strong',run.label),el('small',timestamp(run.created_at)+' · '+run.id.slice(0,8)));
@@ -131,10 +132,10 @@ $('refresh-runs').onclick=refresh;
 $('run-filter').onchange=()=>{offset=0;refresh();};
 let searchTimer;$('run-search').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{offset=0;refresh();},250);};
 $('runs-prev').onclick=()=>{offset=Math.max(0,offset-25);refresh();};$('runs-next').onclick=()=>{offset+=25;refresh();};
-$('new-run').onclick=()=>{const saved=selectedRun?.files;if(saved)files=saved.map(f=>({...f}));clearWorkspace();invalidate();renderFiles();message('Ready for a new run. Select Assess readiness to save a separate run.');$('workspace').scrollIntoView({behavior:'smooth'});};
+$('new-run').onclick=()=>{const saved=selectedRun?.files;if(saved)files=saved.map(f=>({...f}));clearWorkspace();invalidate();renderFiles();message('Ready for a new run. Select Assess readiness to save a separate run.');location.hash='sources';};
 $('delete-run').onclick=async()=>{
   if(!selectedId||!confirm('Delete this saved run, including its source code, artifacts, and review history?'))return;
-  try{await api('/api/runs/'+selectedId+'/delete',{});if(currentId===selectedId){clearWorkspace();invalidate();renderFiles();}selectedId=null;selectedRun=null;if(window.workbench)window.workbench.selectRun(null);lastUpdated='';$('run-detail').hidden=true;offset=0;await refresh();}
+  try{await api('/api/runs/'+selectedId+'/delete',{});if(currentId===selectedId){clearWorkspace();invalidate();renderFiles();}selectedId=null;selectedRun=null;window.dispatchEvent(new CustomEvent('crosslake:run-selected',{detail:null}));if(window.workbench)window.workbench.selectRun(null);lastUpdated='';$('run-detail').hidden=true;offset=0;await refresh();}
   catch(error){$('monitor-error').textContent=error.message;}
 };
 window.monitor={selectedRun:()=>selectedRun,startAssessment,startConversion,clearWorkspace,exportMetadata:()=>selectedRun?{id:selectedRun.id,label:selectedRun.label,status:selectedRun.status,created_at:selectedRun.created_at,updated_at:selectedRun.updated_at,sources:selectedRun.sources,events:selectedRun.events,validation_method:'Manual attestations; no Databricks execution connection.'}:null,canConvert:()=>Boolean(currentId&&selectedRun?.id===currentId&&selectedRun.status==='assessed')};
