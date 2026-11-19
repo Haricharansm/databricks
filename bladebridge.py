@@ -6,8 +6,8 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
-import tempfile
 from morpheus import Morpheus
+from conversion_workspace import conversion_workspace
 from ssis import inventory, package_key
 from ssis_fixes import component_specs, repair_notebook
 
@@ -65,7 +65,8 @@ def unpack_outputs(text,key):
 def convert_package(item):
     info=inventory(item);key=package_key(item['name'])
     if not status()['available']:raise RuntimeError(status()['message'])
-    with tempfile.TemporaryDirectory(prefix='ssis-conversion-') as scratch:
+    cleanup_warnings=[]
+    with conversion_workspace('ssis-conversion-',cleanup_warnings.append) as scratch:
         root=Path(scratch);source=root/item['name'];source.write_text(item['sql'],encoding='utf-8')
         client=Morpheus(None,root,command=[str(python_path()),'-m','databricks.labs.bladebridge.server'])
         try:
@@ -85,6 +86,7 @@ def convert_package(item):
                     except SyntaxError as exc:
                         diagnostics.append({'severity':1,'message':f"Generated notebook syntax needs repair: {artifact['name']} line {exc.lineno}: {exc.msg}"})
         finally:client.close()
+    diagnostics.extend({'severity':2,'message':message} for message in cleanup_warnings)
     notebooks=[f for f in files if f['kind']=='notebook']
     workflow=None
     if len(notebooks)==1:

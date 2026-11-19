@@ -5,11 +5,13 @@ Protocol verified against Lakebridge's LSPEngine; no workspace credentials requi
 import json
 import os
 import signal
+import sys
 from pathlib import Path
 import queue
 import shutil
 import subprocess
 import tempfile
+from conversion_workspace import conversion_workspace
 import threading
 import time
 
@@ -21,9 +23,12 @@ class Morpheus:
         self.registered = False
         self.encoding = 'utf-16'
         self.log = tempfile.TemporaryFile(mode='w+')
-        self.process = subprocess.Popen(command or [shutil.which('java'), '-Xmx768m', '-jar', str(jar)],
-                                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log,
-                                        cwd=str(root), start_new_session=os.name != 'nt')
+        try:
+            self.process = subprocess.Popen(command or [shutil.which('java'), '-Xmx768m', '-jar', str(jar)],
+                                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log,
+                                            cwd=str(root), start_new_session=os.name != 'nt')
+        except Exception:
+            self.log.close();raise
         self.reader = threading.Thread(target=self._read, daemon=True);self.reader.start()
 
     def _read(self):
@@ -42,6 +47,8 @@ class Morpheus:
         except Exception as exc:
             try:self.inbox.put(exc,timeout=1)
             except queue.Full:pass
+        finally:
+            self.process.stdout.close()
 
     def send(self, method, params=None, request=False):
         data = {'jsonrpc':'2.0','method':method}
@@ -104,20 +111,39 @@ class Morpheus:
         return output,result.get('diagnostics',[])
 
     def close(self):
-        # Terminate the isolated process even when protocol startup or a request fails.
-        if self.process.poll() is None:
-            if os.name != 'nt':
-                try:os.killpg(self.process.pid, signal.SIGTERM)
+        # Kill only this engine's process tree; descendants can keep log files open.
+        if getattr(self,'_closed',False):return
+        self._closed=True
+        primary=sys.exc_info()[1]
+        try:
+            if os.name == 'nt' and self.process.poll() is None:
+                try:
+                    subprocess.run(['taskkill','/PID',str(self.process.pid),'/T','/F'],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=5,check=False)
+                except (OSError,subprocess.TimeoutExpired):pass
+            elif os.name != 'nt':
+                try:os.killpg(self.process.pid,signal.SIGTERM)
                 except ProcessLookupError:pass
-            else:self.process.terminate()
-            try:self.process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                if os.name != 'nt':os.killpg(self.process.pid, signal.SIGKILL)
-                else:self.process.kill()
-                self.process.wait(timeout=5)
-        self.reader.join(timeout=2)
-        for stream in (self.process.stdin,self.process.stdout):stream.close()
-        self.log.close()
+            if self.process.poll() is None:
+                if os.name=='nt':self.process.terminate()
+                try:self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    if os.name!='nt':
+                        try:os.killpg(self.process.pid,signal.SIGKILL)
+                        except ProcessLookupError:pass
+                    else:self.process.kill()
+                    self.process.wait(timeout=5)
+            # Ensure the process handle has been reaped before scratch cleanup.
+            self.process.wait(timeout=5)
+        except Exception:
+            if primary is None:raise
+            primary.add_note('Engine shutdown also failed; inspect temporary files after the engine exits.')
+        finally:
+            self.reader.join(timeout=2)
+            streams=[self.process.stdin,self.log]
+            if not self.reader.is_alive():streams.append(self.process.stdout)
+            for stream in streams:
+                try:stream.close()
+                except OSError:pass
 
 def apply_edits(text,edits,encoding='utf-16'):
     lines = text.splitlines(keepends=True)
@@ -151,7 +177,8 @@ def apply_edits(text,edits,encoding='utf-16'):
     return text
 
 def convert_with_morpheus(files, jar):
-    with tempfile.TemporaryDirectory(prefix='morpheus-') as scratch:
+    cleanup_warnings=[]
+    with conversion_workspace('morpheus-',cleanup_warnings.append) as scratch:
         root=Path(scratch);client=Morpheus(jar,root)
         try:
             client.initialize(root)
@@ -161,10 +188,16 @@ def convert_with_morpheus(files, jar):
                 sql,diagnostics=client.transpile(path,item['sql'])
                 converted.append({'name':item['name'],'sql':sql,'diagnostics':diagnostics})
                 all_diagnostics.extend({'file':item['name'],**d} for d in diagnostics)
-            return {'engine':'Lakebridge / Morpheus 0.10.0 (LSP)', 'files':converted,
+            result={'engine':'Lakebridge / Morpheus 0.10.0 (LSP)', 'files':converted,
                     'diagnostics':json.dumps(all_diagnostics,indent=2),
                     'conversion_errors':json.dumps([d for d in all_diagnostics if d.get('severity')==1],indent=2),
                     'status':'Review engine findings' if all_diagnostics else 'Generated — validation required',
                     'validated_on_databricks':False,
                     'warning':'Generated SQL has not been executed or validated on Databricks. Review engine findings and reconcile results before use.'}
         finally:client.close()
+
+    if cleanup_warnings:
+        all_diagnostics.extend({'severity':2,'message':message} for message in cleanup_warnings)
+        result['diagnostics']=json.dumps(all_diagnostics,indent=2)
+        result['status']='Review engine findings'
+    return result

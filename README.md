@@ -541,3 +541,20 @@ This corrects the environment specification; it does not establish that your
 workspace supports every version, or that target SQL and permissions are valid.
 The screenshot error `Invalid platform channel Client-1` occurs before notebook
 execution, so changing SQL or the migration review parameter cannot fix it.
+
+### Windows conversion log locks (WinError 32)
+
+If SSIS conversion reports that `lsp-server.log` in a temporary
+`ssis-conversion-*` folder is in use, update Crosslake and restart the local app.
+The LSP client now stops its own converter process tree on Windows, waits for
+process exit, closes its handles, and retries temporary-folder cleanup briefly.
+A remaining cleanup lock no longer discards successfully generated artifacts;
+a warning identifies the retained folder, which may contain source code and logs.
+Remove it only after the converter has exited and the files are no longer in use.
+Actual conversion failures remain blocked and are not changed into successes.
+
+For a previously failed saved run, use **Runs & reviews → New run from these
+sources**, assess again, then convert. Existing failed records remain unchanged.
+Do not remove `.data` or stop unrelated Python processes. The Windows process-tree
+and lock handling are covered with simulated Windows tests; real conversion is
+also checked with the locally installed engines on the development host.
