@@ -578,8 +578,8 @@ extraction candidates are exported for human review only.
 A reviewed application handoff contains an architecture/naming report, application
 manifest and source/artifact fingerprints, duplicate analysis, a shared runtime
 logging notebook, and (when ready) child Job/pipeline resources plus a master
-`run_job_task` workflow. Stable resource keys preserve references while business
-labels control display names. Code review gates remain disabled; all schedules are
+`run_job_task` workflow. Stable resource keys and an application-ID-based bundle name preserve references
+and isolate deployment state while business labels control display names. Code review gates remain disabled; all schedules are
 paused. CLI bundle validation and explicit sandbox deployment are required. This
 iteration does not live-deploy the application master from Crosslake or certify
 application-wide parity. Individual run live deployment/validation remains available.

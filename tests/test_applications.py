@@ -75,3 +75,6 @@ class ApplicationTests(unittest.TestCase):
     def test_lakeflow_mapping_changes_invalidate_application_export(self):
         self.save();old=deepcopy(self.app);p=self.lakeflow.get(self.rid);p['profile']['environment_version']='5';self.lakeflow.save(self.rid,{'version':p['version'],'fingerprint':p['fingerprint'],'profile':p['profile']})
         with self.assertRaises(Conflict):self.a.export(old['id'],{'version':old['version'],'fingerprint':old['fingerprint'],'include_code':True})
+
+    def test_bundle_state_identity_is_unique_and_survives_display_rename(self):
+        self.save();first=next(f['sql'] for f in self.export()['files'] if f['name']=='databricks.yml');p=deepcopy(self.app['profile']);p['name']='RenamedFinance';self.app=self.a.save(self.app['id'],{'version':self.app['version'],'profile':p});second=next(f['sql'] for f in self.export()['files'] if f['name']=='databricks.yml');self.assertEqual(first,second);self.assertIn(self.app['id'],second)
