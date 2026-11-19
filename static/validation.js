@@ -2,7 +2,7 @@
 (()=>{
 let run=null,currentCase=null,columns=[],dirty=true,working=false,generation=0,activeReport=null;
 const active=new Set(['uploaded','assessing','queued','converting']);
-const supported=source=>['sql','sql_script','stored_procedure','ssis'].includes(source.kind);
+const supported=source=>['sql','sql_script','stored_procedure','ssis','ssis_package'].includes(source.kind);
 function notify(text,error=false){$('wb-message').textContent=text;$('wb-message').className=error?'monitor-error':'section-description';}
 async function get(path){const response=await fetch(path);const data=await response.json();if(!response.ok)throw new Error(data.error||'Unable to load validation data.');return data;}
 function base(){return '/api/runs/'+run.id+'/validation';}

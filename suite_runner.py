@@ -43,6 +43,7 @@ def validate_manifest(manifest):
 
 def run_suite(manifest,target=None,source=None,*,fixture_mode=False,source_job=None,target_job=None,cancel=lambda:False,progress=lambda event:None):
     validate_manifest(manifest);result={'schema_version':1,'id':uuid.uuid4().hex,'started_at':stamp(),'status':'running','fixture_ref':manifest['fixture_ref'],'fixture_alignment_verified':False,'manifest_sha256':sha(manifest),'artifact_fingerprint':manifest.get('artifact_fingerprint'),'mode':'fixtures' if fixture_mode else 'source_and_target' if source else 'golden_to_target','cases':[],'jobs':{},'deployable':False,'limits':{'max_rows_per_result':MAX_ROWS,'max_bytes_per_result':MAX_DATA_BYTES},'limitations':['Only declared queries, fixtures and optional jobs are checked. A pass is not complete SSIS semantic equivalence.','Input fixture alignment and golden export provenance are user supplied. Jobs must be configured to consume the referenced inputs.','Job success does not prove artifact immutability; external workspace/source changes require independent control.']}
+    if manifest.get('parent_execution'):result['parent_execution']=manifest['parent_execution']
     source_results={};case_rows={};submissions=[]
     def remote_event(event,label):
         record={'stage':label+'_remote_submission','at':stamp(),**event};submissions.append(record);progress(record)

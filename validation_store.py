@@ -24,7 +24,7 @@ class ValidationStore:
         if run['status'] in ACTIVE:raise Conflict('Wait for the active run to finish before changing or comparing validation cases.')
         row=db.execute('SELECT * FROM sources WHERE run_id=? AND name=?',(run_id,source)).fetchone()
         if row is None:raise KeyError('Source not found in this run.')
-        if row['kind'] not in ('sql','sql_script','stored_procedure','ssis'):raise ValueError('Select a SQL source or SSIS package. SSIS cases validate an explicit output query, not the entire pipeline.')
+        if row['kind'] not in ('sql','sql_script','stored_procedure','ssis','ssis_package'):raise ValueError('Select a SQL source or SSIS package. SSIS cases validate an explicit output query, not the entire pipeline.')
         return row
 
     def save_case(self,run_id,payload,case_id=None):

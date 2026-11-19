@@ -46,3 +46,21 @@ execution. SSIS initial variable values are not used because these outputs are
 written exactly once and have no other references. SQL parameter bindings,
 variable readers, expressions, multiple writers, noninteger types and nested
 variable scope require explicit migration and remain blocked.
+
+## Run the end-to-end demo inside Crosslake
+
+Instead of CLI deployment, use Lakeflow studio's **Deploy, run & validate in
+Databricks** panel after previewing this Job. Approve all source reviews first,
+then load the saved run, review the live plan and explicitly deploy. Select the
+created Job, consent to execution and run it in the sandbox. The evidence table
+shows each task's state and `ssis_User_ProductCount` when the count task completes.
+Full logs are linked in Databricks.
+
+For automatic post-run validation, save a case with one integer column
+`ProductCnt`, target query `SELECT COUNT(*) AS ProductCnt FROM dbo.Product`, and
+golden JSON `[{"ProductCnt":4}]`. Save matching sandbox catalog and `dbo` schema
+in Databricks settings along with a SQL warehouse. Load the live panel again,
+choose that case, provide the fixture reference and confirm validation queries.
+Expected final operation status: `validated` (Job succeeded and golden suite
+passed). Without selected automatic tests, Job success is `succeeded`, not
+`validated`.

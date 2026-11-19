@@ -1,5 +1,6 @@
 """Versioned golden baselines, durable suite jobs and review-bundle export."""
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 import hashlib
 import importlib.util
 import json
@@ -79,11 +80,14 @@ CREATE INDEX IF NOT EXISTS golden_suite_run ON golden_suites(run_id,created_at);
             cases.append(row)
         manifest={'schema_version':1,'run_id':run_id,'fixture_ref':payload.get('fixture_ref'),'artifact_fingerprint':artifact_fingerprint(run),'cases':cases,'created_at':now()}
         return validate_manifest(manifest)
-    def start(self,run_id,payload):
+    def start(self,run_id,payload,*,prepared_manifest=None,parent_execution=None):
         if not isinstance(payload,dict):raise ValueError('Invalid suite request.')
         mode=payload.get('mode','databricks')
         if mode not in ('databricks','sqlserver','fixtures'):raise ValueError('Suite mode must be databricks, sqlserver or fixtures.')
-        manifest=self.manifest(run_id,payload);target=None;source=None
+        manifest=deepcopy(prepared_manifest) if prepared_manifest is not None else self.manifest(run_id,payload);validate_manifest(manifest)
+        if prepared_manifest is not None and (mode!="databricks" or manifest.get("run_id")!=run_id):raise ValueError("Prepared validation must belong to this run and use Databricks mode.")
+        if parent_execution is not None:manifest["parent_execution"]=parent_execution
+        target=None;source=None
         if mode=='fixtures' and (payload.get('source_job') or payload.get('target_job')):raise ValueError('Fixture replay cannot start jobs.')
         if mode!='fixtures':
             if payload.get('allow_compute') is not True:raise ValueError('Confirm warehouse query execution and compute cost.')

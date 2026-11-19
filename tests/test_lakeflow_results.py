@@ -47,7 +47,7 @@ class BindingTests(unittest.TestCase):
             def __init__(self):self.columns=columns
             def take(self,n):calls.append(n);return rows[:n]
         code,evidence=output_code(['SELECT COUNT(*) AS ProductCnt FROM dbo.Product'],outputs or [{'variable':'User::ProductCount','result_name':'ProductCnt','data_type':'3'}],'count_task')
-        spark=SimpleNamespace(sql=lambda sql:Frame());dbutils=SimpleNamespace(jobs=SimpleNamespace(taskValues=SimpleNamespace(set=lambda **kw:values.update({kw['key']:kw['value']}))))
+        spark=SimpleNamespace(sql=lambda sql:Frame());dbutils=SimpleNamespace(notebook=SimpleNamespace(exit=lambda value:None),jobs=SimpleNamespace(taskValues=SimpleNamespace(set=lambda **kw:values.update({kw['key']:kw['value']}))))
         return code,evidence,values,calls,{'spark':spark,'dbutils':dbutils}
     def test_runtime_named_and_ordinal_and_int64(self):
         for name,typ,value in [('ProductCnt','3',4),('0','20',2**40)]:

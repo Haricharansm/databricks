@@ -226,6 +226,7 @@ class RunService(ValidationStore):
             run=self.require(db,run_id)
             if run['status'] in ACTIVE:raise Conflict('Active runs cannot be deleted.')
             if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='golden_suites'").fetchone() and db.execute("SELECT 1 FROM golden_suites WHERE run_id=? AND status IN ('queued','running')",(run_id,)).fetchone():raise Conflict('Cancel or finish the active golden suite before deleting this run.')
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='lakeflow_live'").fetchone() and db.execute("SELECT 1 FROM lakeflow_live WHERE run_id=? AND status IN ('queued','deploying','running','validating','cancelling')",(run_id,)).fetchone():raise Conflict('Finish the active Lakeflow operation before deleting this run.')
             db.execute('DELETE FROM runs WHERE id=?',(run_id,))
         return {'deleted':run_id}
 

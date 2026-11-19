@@ -19,6 +19,7 @@ from accelerator import Toolkit
 from lakeflow import LakeflowService
 from insights import InsightsService
 from automation import AutomationService
+from lakeflow_live import LakeflowLive
 
 ROOT = Path(__file__).parent
 
@@ -32,8 +33,10 @@ class AppServer(ThreadingHTTPServer):
         self.lakeflow=LakeflowService(self.runs)
         self.insights=InsightsService(self.runs)
         self.automation=AutomationService(self.runs,self.databricks,packager=self.toolkit.package)
+        self.lakeflow_live=LakeflowLive(self.runs,self.databricks,self.lakeflow,self.automation)
     def server_close(self):
         super().server_close()
+        if hasattr(self,'lakeflow_live'):self.lakeflow_live.close()
         if hasattr(self,'automation'):self.automation.close()
         if hasattr(self,'databricks'):
             with self.databricks.lock:self.databricks.session_token=None
@@ -69,6 +72,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.respond(200,self.server.automation.status(run_id,suite_id) if suite_id else self.server.automation.get(run_id))
             insights=re.fullmatch(r'/api/runs/([a-f0-9]{32})/insights(/export)?',path)
             if insights:return self.respond(200,self.server.insights.export(insights.group(1)) if insights.group(2) else self.server.insights.get(insights.group(1)))
+            live=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow/live(?:/([a-f0-9]{32}))?',path)
+            if live:return self.respond(200,self.server.lakeflow_live.status(*live.groups()) if live.group(2) else self.server.lakeflow_live.history(live.group(1)))
             lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow(/bundle)?',path)
             if lakeflow:return self.respond(200,self.server.lakeflow.generate(lakeflow.group(1)) if lakeflow.group(2) else self.server.lakeflow.get(lakeflow.group(1)))
             if path=='/api/toolkit/checks':return self.respond(200,self.server.toolkit.checks())
@@ -101,7 +106,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/automation.js', '/navigation.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/automation.js', '/navigation.js', '/lakeflow-live.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -126,6 +131,9 @@ class Handler(SimpleHTTPRequestHandler):
             if insights:
                 run_id,action=insights.groups()
                 return self.respond(200,self.server.insights.clear_workload(run_id,payload) if action=='clear-workload' else self.server.insights.save(run_id,payload,action=='workload'))
+            live=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow/live/(preview|deploy|run|cancel|refresh_remote)',self.path)
+            if live:
+                run_id,action=live.groups();return self.respond(202 if action in ('deploy','run') else 200,self.server.lakeflow_live.preview(run_id) if action=='preview' else getattr(self.server.lakeflow_live,action)(run_id,payload))
             lakeflow=re.fullmatch(r'/api/runs/([a-f0-9]{32})/lakeflow',self.path)
             if lakeflow:return self.respond(200,self.server.lakeflow.save(lakeflow.group(1),payload))
             toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|query|attach|refresh)',self.path)

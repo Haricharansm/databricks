@@ -439,3 +439,66 @@ state. Run the generated notebooks as Job tasks to inspect task values.
 See [the ProductPackage demo](samples/lakeflow/ProductPackage/README.md) for the
 three-task demo and expected result (`ssis_User_ProductCount = 4`). It requires
 an isolated sandbox because its first task drops and recreates `dbo.Product`.
+
+## Lakeflow live deployment, monitoring and post-run golden tests
+
+Lakeflow studio now has **Deploy, run & validate in Databricks** below the bundle
+preview. Save mappings and resolve every package blocker first. All source files
+must be converted and approved in **Runs & reviews**. The existing downloaded
+bundle workflow remains available.
+
+1. Save/test Databricks settings. The identity needs workspace import/export,
+   Jobs create/run/read/cancel, and (for declarative data flows) pipeline create/read
+   permissions. Runtime compute also needs access to the target catalog/schema,
+   tables, volumes and source data. These privileges are workspace-specific.
+2. In the live panel, click **Load selected run & history**, then **Review live
+   deployment plan**. Verify the workspace, namespace and resource list. Confirm
+   the displayed reviewed bundle and click **Deploy reviewed resources**.
+3. Each deployment creates new resources and a unique folder under
+   `/Shared/Crosslake/<migration-run>/<deployment-id>`. Existing Jobs/resources are
+   not overwritten. Schedules stay paused. The live-deployed review gates are
+   enabled only through the explicit reviewed-code deployment confirmation;
+   exported bundles still default to disabled gates. No compute is started by
+   deployment. Partial resources are retained with recorded IDs after failure;
+   inspect them before retrying and remove them manually when no longer needed.
+4. Choose the completed deployment and Job resource. Separately confirm execution
+   and target-data changes, then **Run Job**. The app verifies imported notebook
+   hashes and captured Job/pipeline settings before submission. It records the
+   remote run ID, polls task states and exposes cancellation. Open the Databricks
+   run link for full logs. Supported generated integer task values are returned
+   as structured notebook results and shown in the evidence table.
+5. To validate automatically, first create test cases in Validation workbench and
+   save current golden baselines in Test automation. In Lakeflow's live panel,
+   select those cases, record the aligned input fixture reference, and consent to
+   post-run warehouse queries. Saved validation catalog/schema must match the
+   deployment namespace. A successful Job then queues a golden suite linked to
+   its deployment and remote run IDs. A failed/cancelled Job never starts it.
+   Job success and data comparison status are shown separately. A validation
+   failure or inability to start a suite never appears as a migration pass.
+
+Definitions and baseline versions are captured before Job submission and checked
+again before post-run validation. If they change during execution, validation is
+blocked rather than silently using newer expectations. Workspace/credentials
+revision changes or another active suite can also block validation; the original
+Job result remains recorded. Inputs must be prepared/aligned by the operator;
+only selected result queries are validated. No source SSIS job or source data
+copy is automatically started by this post-run flow.
+
+The app saves evidence locally and keeps credentials in existing session/env/CLI
+handling. On restart, unfinished operations become `interrupted`; no deployment,
+Job start, or validation is replayed. **Read remote status** can reconcile the
+recorded run's state without resubmitting work. Workspace changes after the
+pre-run verification remain possible; use access controls and isolated data to
+prevent unrelated edits/updates during tests. Run polling is bounded to two hours;
+cancellation requests wait up to a minute for remote confirmation, then require
+inspection in Databricks. A lost create/submit response may leave an unrecorded
+remote resource; inspect the unique folder and Jobs list before retrying.
+
+Live deployment supports generated notebooks and generated declarative pipelines
+orchestrated through Jobs, up to 100 tasks per Job. Existing external notebook
+mappings remain export-only. Pipeline files are imported as Python notebooks and
+referenced through pipeline notebook libraries. Workspace serverless/pipeline
+capabilities must be tested in your tenant. This feature has automated fixture
+and browser coverage; it has not been executed against a real Databricks workspace
+from this development environment. No production promotion or auto-scheduling is
+performed.

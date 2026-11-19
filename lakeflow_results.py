@@ -78,6 +78,8 @@ for _lf_binding in {bindings}:
 for _lf_key, _lf_value in _lf_values.items():
     dbutils.jobs.taskValues.set(key=_lf_key, value=_lf_value)
 print("Published SSIS task values:", _lf_values)
+import json as _lf_json
+dbutils.notebook.exit(_lf_json.dumps({{"crosslake_task_values": _lf_values}}))
 '''.format(query=repr(queries[0]),bindings=repr(config))
     evidence=[dict(o,producer_task_key=task_key) for o in config]
     return code,evidence

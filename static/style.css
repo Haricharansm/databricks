@@ -31,3 +31,4 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*{scroll-behavior:auto!important}}
 .start-guide{padding:28px}
 @media(max-width:800px){.sidebar{position:sticky;top:0;z-index:10;background:var(--white)}section[id],main#workspace{scroll-margin-top:80px}.start-guide{padding:22px}}
+.lf-live{margin-top:28px;padding:24px 0;border-top:1px solid var(--line)}.lf-live>label:not(.dbx-consent){display:block;margin:18px 0}.lf-live select,.lf-live input:not([type=checkbox]){width:100%;margin-top:7px}.lf-live pre{max-height:400px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);padding:16px;font-size:12px}.lf-live table{display:block;overflow-x:auto;margin:14px 0}.lf-live td{overflow-wrap:anywhere;max-width:350px}
