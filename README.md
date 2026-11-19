@@ -424,3 +424,18 @@ keep their own loaded context, so check that panel's run label before editing or
 executing. The sidebar highlights your location as you scroll. On smaller screens,
 use **Menu** to navigate; keyboard users can use **Skip to main content** and Escape
 to close the menu. Navigation does not bypass review or execution consent controls.
+
+### Lakeflow single-row SSIS result outputs
+
+Lakeflow `auto_sql` supports package-scope, output-only `User` Int32/Int64 variables
+written once by an Execute SQL single-row result binding. Named columns and
+zero-based ordinals map to Databricks task values; preview and the exported plan
+show each producer and key. Generated tasks validate row cardinality, column
+resolution, NULL/type and integer range before publishing values. Downstream
+variable reads, input bindings, parameters, expressions, multiple writers, nested
+scope and noninteger variable types remain blocked rather than silently losing
+state. Run the generated notebooks as Job tasks to inspect task values.
+
+See [the ProductPackage demo](samples/lakeflow/ProductPackage/README.md) for the
+three-task demo and expected result (`ssis_User_ProductCount = 4`). It requires
+an isolated sandbox because its first task drops and recreates `dbo.Product`.

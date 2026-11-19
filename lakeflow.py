@@ -12,6 +12,7 @@ from ssis import inventory,parse_package,local,prop,package_key
 from core import mask_sql
 from bladebridge import GUARD
 from monitoring import ACTIVE,Conflict
+from lakeflow_results import result_bindings,output_code
 
 IDENT=re.compile(r'[A-Za-z_][A-Za-z0-9_]{0,127}')
 NODE=re.compile(r'^#\s*Processing node\s+(.+?),\s*type\s+(\w+)',re.M)
@@ -115,7 +116,8 @@ def package_graph(item):
             aliases[alias]=t['id']
     if not tasks or len({t['id'] for t in tasks})!=len(tasks):raise ValueError('Empty package or duplicate task IDs.')
     if any(t['parent'] or 'LOOP' in t['type'].upper() or 'SEQUENCE' in t['type'].upper() for t in tasks):raise ValueError('Nested containers and loops require manual orchestration.')
-    if inv['variables'] or inv['parameters'] or item.get('origin_project'):raise ValueError('Package/project parameters, variables and scope require explicit notebook orchestration; they are not inferred.')
+    if inv['parameters'] or item.get('origin_project'):raise ValueError('Package/project parameters and scope require explicit notebook orchestration; they are not inferred.')
+    result_bindings(root)
     for n in root.iter():
         if prop(n,'Disable','').lower() in ('true','1') or prop(n,'TransactionOption','') in ('2','Required'):raise ValueError('Disabled executables or required SSIS transactions need manual orchestration.')
     edges=[]
@@ -242,22 +244,27 @@ class LakeflowService:
             outcome={'source':item['name'],'tasks':[],'blockers':[]};outcomes.append(outcome)
             try:inv,nodes,edges,order=package_graph(item)
             except ValueError as exc:outcome['blockers'].append(str(exc));continue
-            tasks={t['id']:t for t in inv['tasks']};job_tasks=[];resource_key=key(item['name'])
+            tasks={t['id']:t for t in inv['tasks']};job_tasks=[];resource_key=key(item['name']);outputs=result_bindings(parse_package(item['sql']))
             for task_id in order:
                 task=tasks[task_id];m=mapping.get((item['name'],task_id),{});task_key=key(task_id);entry={'task_id':task_id,'name':task['name'],'status':'blocked'};outcome['tasks'].append(entry)
                 try:
                     node=nodes.get(task_id)
                     if node is None:raise ValueError('Task XML cannot be resolved.')
-                    kind=m.get('kind');job_task={'task_key':task_key,'max_retries':profile['max_retries'],'min_retry_interval_millis':profile['min_retry_interval_millis'],'run_if':'ALL_SUCCESS'}
+                    kind=m.get('kind')
+                    if task_id in outputs and kind!='auto_sql':raise ValueError('A result-producing task must use auto_sql to preserve its declared task values.')
+                    job_task={'task_key':task_key,'max_retries':profile['max_retries'],'min_retry_interval_millis':profile['min_retry_interval_millis'],'run_if':'ALL_SUCCESS'}
                     dependencies=[{'task_key':key(start)} for start,end in edges if end==task_id]
                     if dependencies:job_task['depends_on']=dependencies
                     if kind=='auto_sql':
                         if 'ExecuteSQLTask' not in task['type']:raise ValueError('Automatic SQL requires an Execute SQL task.')
                         data=[n for n in node.iter() if local(n.tag)=='SqlTaskData']
-                        if len(data)!=1 or prop(data[0],'SqlStmtSourceType','0') not in ('','0') or prop(data[0],'IsStoredProc','false').lower() in ('true','1') or prop(data[0],'ResultType','ResultSetType_None') not in ('','0','ResultSetType_None') or any(local(n.tag) in ('ParameterBinding','ResultBinding') for n in node.iter()):raise ValueError('SQL files/variables, result sets or parameter bindings require a reviewed notebook.')
+                        if len(data)!=1 or prop(data[0],'SqlStmtSourceType','0') not in ('','0') or prop(data[0],'IsStoredProc','false').lower() in ('true','1') or prop(data[0],'ResultType','ResultSetType_None') not in (('1','ResultSetType_SingleRow') if task_id in outputs else ('','0','ResultSetType_None')) or any(local(n.tag) in (('ParameterBinding',) if task_id in outputs else ('ParameterBinding','ResultBinding')) for n in node.iter()):raise ValueError('SQL files/variables, result sets or parameter bindings require a reviewed notebook.')
                         queries=task_sql(item['name'],task,artifacts)
                         namespace='spark.sql('+repr('USE CATALOG `'+profile['catalog']+'`')+')\nspark.sql('+repr('USE SCHEMA `'+profile['schema']+'`')+')\n\n# COMMAND ----------\n'
-                        code=GUARD+namespace+'\n'.join('display(spark.sql('+repr(q)+'))' for q in queries)+'\n'
+                        if task_id in outputs:
+                            body,evidence=output_code(queries,outputs[task_id],task_key);entry['task_values']=evidence
+                        else:body='\n'.join('display(spark.sql('+repr(q)+'))' for q in queries)+'\n'
+                        code=GUARD+namespace+body
                         name='notebooks/'+resource_key+'/'+task_key+'.py';files.append({'name':name,'sql':code});job_task.update(notebook_task={'notebook_path':'${workspace.file_path}/'+name.removesuffix('.py'),'source':'WORKSPACE','base_parameters':{'migration_reviewed':'false'}},environment_key='default')
                         entry.update(status='generated_review_required',kind=kind,artifact=name)
                     elif kind=='notebook':
@@ -286,7 +293,7 @@ class LakeflowService:
         if len(files)>176 or sum(len(f['sql'].encode()) for f in files)>16*1024*1024:raise ValueError('Generated bundle is too large; split this migration into smaller runs.')
         files.append({'name':'resources/lakeflow.json','sql':json.dumps(resources,indent=2)})
         files.append({'name':'databricks.yml','sql':'bundle:\n  name: crosslake-lakeflow-'+run_id[:8]+'\ninclude:\n  - resources/*.json\ntargets:\n  dev:\n    default: true\n    mode: development\n'})
-        report={'run_id':run_id,'profile_version':current['version'],'profile':profile,'profile_sha256':hashlib.sha256(json.dumps(profile,sort_keys=True).encode()).hexdigest(),'fingerprint':current['fingerprint'],'status':status,'jobs':len(jobs),'pipelines':len(pipelines),'packages':outcomes,'review_required':True,'deployable':False,'executed_by_app':False,'limitations':['Generated resources are not deployed or executed. All schedules are paused and review gates are false.','Only flat success/AND task dependencies are preserved. SQL tasks run in separate sessions; review cross-task state and side effects.','Pipeline sources/targets are user mappings. Batch materialized-view refresh and streaming append semantics are not inferred from SSIS destinations.','No cross-package dependencies, transactions, loops, dynamic SQL, lookup/join logic, custom REST or script translation is inferred.','Serverless support, Unity Catalog permissions, pipeline capabilities, schema DDL, cron syntax and data parity require workspace validation.'],'artifacts':[{'path':f['name'],'sha256':hashlib.sha256(f['sql'].encode()).hexdigest()} for f in files]}
+        report={'run_id':run_id,'profile_version':current['version'],'profile':profile,'profile_sha256':hashlib.sha256(json.dumps(profile,sort_keys=True).encode()).hexdigest(),'fingerprint':current['fingerprint'],'status':status,'jobs':len(jobs),'pipelines':len(pipelines),'packages':outcomes,'review_required':True,'deployable':False,'executed_by_app':False,'limitations':['Generated resources are not deployed or executed. All schedules are paused and review gates are false.','Single-row output-only package User Int32/Int64 bindings become task values; consumers, parameters and mutable variables remain blocked.','Only flat success/AND task dependencies are preserved. SQL tasks run in separate sessions; review cross-task state and side effects.','Pipeline sources/targets are user mappings. Batch materialized-view refresh and streaming append semantics are not inferred from SSIS destinations.','No cross-package dependencies, transactions, loops, dynamic SQL, lookup/join logic, custom REST or script translation is inferred.','Serverless support, Unity Catalog permissions, pipeline capabilities, schema DDL, cron syntax and data parity require workspace validation.'],'artifacts':[{'path':f['name'],'sha256':hashlib.sha256(f['sql'].encode()).hexdigest()} for f in files]}
         files.append({'name':'lakeflow-plan.json','sql':json.dumps(report,indent=2)})
-        files.append({'name':'README.md','sql':'# Crosslake Lakeflow review bundle\n\nRead lakeflow-plan.json first. Blocked packages have no generated Job; individually generated pipeline resources may remain for review. Do not assume partial resources implement the complete package.\n\n1. Review source/target mappings, schemas, output parity, task dependencies and transaction/session behavior.\n2. Configure your Databricks CLI profile and run `databricks bundle validate -t dev`.\n3. Review resources/lakeflow.json and generated code. Set each reviewed notebook parameter migration_reviewed=true and pipeline configuration crosslake.migration_reviewed=true only after testing.\n4. Deploy explicitly with `databricks bundle deploy -t dev`. No credentials or host are embedded.\n5. Start and test a job/pipeline in the workspace; compare outputs in Crosslake Validation workbench. Enable schedules only after validation.\n\nExisting notebook mappings reference workspace assets not included in this bundle. Parameters and secret references must be configured manually. Generated notebooks are imported as notebooks (extensionless workspace paths); pipeline Python is synced as a source file.\n\nDocs: https://docs.databricks.com/aws/en/ldp/developer/python-ref and https://docs.databricks.com/aws/en/dev-tools/bundles/resources\n'})
+        files.append({'name':'README.md','sql':'# Crosslake Lakeflow review bundle\n\nRead lakeflow-plan.json first. Blocked packages have no generated Job; individually generated pipeline resources may remain for review. Do not assume partial resources implement the complete package.\n\n1. Review source/target mappings, schemas, output parity, task dependencies and transaction/session behavior.\n2. Configure your Databricks CLI profile and run `databricks bundle validate -t dev`.\n3. Review resources/lakeflow.json and generated code. Set each reviewed notebook parameter migration_reviewed=true and pipeline configuration crosslake.migration_reviewed=true only after testing.\n4. Deploy explicitly with `databricks bundle deploy -t dev`. No credentials or host are embedded.\n5. Start and test a job/pipeline in the workspace; compare outputs in Crosslake Validation workbench. Enable schedules only after validation.\n\nSingle-row output-only package User Int32/Int64 result bindings are published as Databricks task values. See each task_values entry in lakeflow-plan.json for the variable, result column, producer task key and task-value key. Generated code requires exactly one row and validates all bound values before publishing. Input parameters, downstream variable consumers, other types, scoped or multiply-written variables remain blocked. Run these notebooks as Job tasks to inspect task values in run details.\n\nExisting notebook mappings reference workspace assets not included in this bundle. Parameters and secret references must be configured manually. Generated notebooks are imported as notebooks (extensionless workspace paths); pipeline Python is synced as a source file.\n\nDocs: https://docs.databricks.com/aws/en/ldp/developer/python-ref and https://docs.databricks.com/aws/en/dev-tools/bundles/resources\n'})
         return {'files':files,'report':report}
