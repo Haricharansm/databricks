@@ -63,6 +63,7 @@ class LakeflowLive:
         self._save(op['id'],op['status'],report);return self.status(run_id,op['id'])
     def _ready(self,run_id):
         bundle=self.lakeflow.generate(run_id);r=bundle['report'];run=self.runs.get(run_id)
+        if not r['profile'].get('environment_version') and any(f['name'].startswith('notebooks/') for f in bundle['files']):raise ValueError('Select a workspace-supported serverless environment version in Lakeflow mappings, save, and preview again. Old Client-1 deployments must be replaced.')
         if not r['jobs'] or any(p['blockers'] for p in r['packages']):raise ValueError('Every package must generate a complete Job before live deployment.')
         if any(s['status']!='converted' or s['review']!='approved' for s in run['sources']):raise Conflict('Approve every converted source in Runs & reviews before live deployment or execution.')
         resources=json.loads(next(f['sql'] for f in bundle['files'] if f['name']=='resources/lakeflow.json'))['resources']
@@ -76,7 +77,7 @@ class LakeflowLive:
         return bundle,resources,paths,proof
     def preview(self,run_id):
         bundle,resources,paths,proof=self._ready(run_id);config=self.settings.public()
-        return {'bundle_sha256':proof,'workspace_url':config.get('workspace_url'),'revision':config['revision'],'jobs':list(resources['jobs']),'pipelines':list(resources['pipelines']),'notebooks':list(paths),'profile_version':bundle['report']['profile_version'],'namespace':{k:bundle['report']['profile'][k] for k in ('catalog','schema')},'schedules_paused':True,'creates_new_resources':True}
+        return {'bundle_sha256':proof,'workspace_url':config.get('workspace_url'),'revision':config['revision'],'jobs':list(resources['jobs']),'pipelines':list(resources['pipelines']),'notebooks':list(paths),'profile_version':bundle['report']['profile_version'],'environment_version':bundle['report']['profile'].get('environment_version'),'namespace':{k:bundle['report']['profile'][k] for k in ('catalog','schema')},'schedules_paused':True,'creates_new_resources':True}
     def _queue(self,run_id,kind,body,worker,config,token):
         ident=uuid.uuid4().hex;report={'workspace_url':config['workspace_url'],'events':[],'jobs':{},'pipelines':{},'notebooks':[]}
         with self.lock,self.runs.db() as db:

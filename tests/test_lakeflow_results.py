@@ -23,7 +23,7 @@ class BindingTests(unittest.TestCase):
         with self.runs.db() as db:db.execute('UPDATE runs SET conversion_json=? WHERE id=?',(json.dumps({'files':[{'name':'notebooks/'+package_key(self.item['name'])+'/Product.py','kind':'notebook','sql':GUARD+'\n# COMMAND ----------\n'.join(cells)}]}),self.rid))
     def tearDown(self):self.runs.close();self.tmp.cleanup()
     def bundle(self):
-        p=self.service.get(self.rid);p['profile']['schedule']={'quartz_cron_expression':'0 0 2 * * ?','timezone_id':'America/Chicago'};self.service.save(self.rid,{'version':p['version'],'fingerprint':p['fingerprint'],'profile':p['profile']});return self.service.generate(self.rid)
+        p=self.service.get(self.rid);p['profile']['environment_version']='4';p['profile']['schedule']={'quartz_cron_expression':'0 0 2 * * ?','timezone_id':'America/Chicago'};self.service.save(self.rid,{'version':p['version'],'fingerprint':p['fingerprint'],'profile':p['profile']});return self.service.generate(self.rid)
     def test_product_generates_complete_job_and_output_evidence(self):
         out=self.bundle();self.assertEqual(out['report']['jobs'],1);self.assertEqual(out['report']['pipelines'],0);self.assertEqual(out['report']['packages'][0]['blockers'],[])
         resource=json.loads(next(f['sql'] for f in out['files'] if f['name']=='resources/lakeflow.json'))['resources'];job=next(iter(resource['jobs'].values()));self.assertEqual(job['schedule']['pause_status'],'PAUSED');self.assertEqual(len(job['tasks']),3)

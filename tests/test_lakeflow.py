@@ -26,7 +26,7 @@ class LakeflowTests(unittest.TestCase):
         with self.store.db() as db:db.execute('UPDATE runs SET conversion_json=? WHERE id=?',(json.dumps({'files':[{'name':'notebooks/'+package_key('Sales.dtsx')+'/Sales.py','kind':'notebook','sql':self.notebook}]}),self.rid))
     def tearDown(self):self.store.close();self.tmp.cleanup()
     def save(self,edit=None):
-        current=self.service.get(self.rid);p=current['profile']
+        current=self.service.get(self.rid);p=current['profile'];p['environment_version']='4'
         for m in p['task_mappings']:
             if m['source']=='Copy.dtsx':m.update(kind='pipeline',pipeline={'source_kind':'table','source':'main.source.customers','target_table':'customers','mode':'batch'})
         if edit:edit(p)
@@ -90,6 +90,27 @@ class LakeflowTests(unittest.TestCase):
         with self.store.db() as db:self.assertEqual(db.execute('SELECT COUNT(*) FROM lakeflow_profiles').fetchone()[0],0)
 
 
+    def test_environment_version_is_explicit_and_uses_current_api_field(self):
+        result=self.generate(lambda p:p.update(environment_version='4'))
+        jobs=json.loads(next(f['sql'] for f in result['files'] if f['name']=='resources/lakeflow.json'))['resources']['jobs']
+        self.assertEqual(jobs[key('Sales.dtsx')]['environments'],[{'environment_key':'default','spec':{'environment_version':'4'}}])
+        self.assertNotIn('"client"',json.dumps(jobs))
+    def test_missing_environment_blocks_notebook_job_without_guessing(self):
+        result=self.generate(lambda p:p.update(environment_version=''))
+        sales=next(p for p in result['report']['packages'] if p['source']=='Sales.dtsx')
+        self.assertNotIn('job_resource',sales);self.assertIn('Select a serverless environment version',sales['blockers'][0])
+    def test_invalid_environment_versions_are_rejected(self):
+        for value in ['Client-1','latest',None,4,'0','01','4\n']:
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):self.save(lambda p:p.update(environment_version=value))
+    def test_legacy_saved_profile_requires_environment_selection(self):
+        self.save()
+        with self.store.db() as db:
+            body=json.loads(db.execute('SELECT body FROM lakeflow_profiles WHERE run_id=?',(self.rid,)).fetchone()[0]);body.pop('environment_version');db.execute('UPDATE lakeflow_profiles SET body=? WHERE run_id=?',(json.dumps(body),self.rid))
+        self.assertEqual(self.service.get(self.rid)['profile']['environment_version'],'')
+        result=self.service.generate(self.rid);sales=next(p for p in result['report']['packages'] if p['source']=='Sales.dtsx');self.assertNotIn('job_resource',sales)
+
+
 class LakeflowHTTPTests(unittest.TestCase):
     def setUp(self):
         from functools import partial
@@ -108,7 +129,7 @@ class LakeflowHTTPTests(unittest.TestCase):
         with urlopen(request,timeout=10) as response:return response.read()
     def test_routes_save_generate_and_download_bundle(self):
         import io,zipfile
-        profile=json.loads(self.request(self.path));saved=json.loads(self.request(self.path,{'version':0,'fingerprint':profile['fingerprint'],'profile':profile['profile']}));self.assertEqual(saved['version'],1)
+        profile=json.loads(self.request(self.path));profile['profile']['environment_version']='4';saved=json.loads(self.request(self.path,{'version':0,'fingerprint':profile['fingerprint'],'profile':profile['profile']}));self.assertEqual(saved['version'],1)
         bundle=json.loads(self.request(self.path+'/bundle'));self.assertEqual(bundle['report']['jobs'],1);self.assertEqual(bundle['report']['status'],'partial')
         archive=zipfile.ZipFile(io.BytesIO(self.request('/api/export',bundle)));self.assertIn('lakeflow-plan.json',archive.namelist());self.assertIn('resources/lakeflow.json',archive.namelist());self.assertIn('databricks.yml',archive.namelist())
     def test_profile_endpoint_rejects_stale_version_and_cross_origin_style_request(self):

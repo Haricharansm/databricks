@@ -64,3 +64,14 @@ choose that case, provide the fixture reference and confirm validation queries.
 Expected final operation status: `validated` (Job succeeded and golden suite
 passed). Without selected automatic tests, Job success is `succeeded`, not
 `validated`.
+
+Before generating notebook Jobs, fill in **Serverless environment version** in
+Lakeflow studio using the numeric version supported by your target workspace.
+Save and regenerate. If an earlier deployment failed with `Invalid platform
+channel Client-1`, create and select a new deployment after this change; updating
+Crosslake does not alter an already created Databricks Job.
+
+**Environment selection:** before saving Lakeflow mappings, enter a numeric
+serverless environment version supported in the target workspace. Crosslake no
+longer generates the deprecated Client-1 setting. Upgrade, save the version,
+preview and create a new deployment rather than rerunning an old Client-1 Job.

@@ -502,3 +502,42 @@ capabilities must be tested in your tenant. This feature has automated fixture
 and browser coverage; it has not been executed against a real Databricks workspace
 from this development environment. No production promotion or auto-scheduling is
 performed.
+
+### Serverless environment compatibility
+
+Lakeflow notebook Jobs require an explicit **Serverless environment version** in
+Lakeflow studio. Use the numeric version offered by the target workspace's
+**Environment and Libraries** editor, save mappings, regenerate the preview and
+review the live deployment plan. Crosslake emits
+`environments[].spec.environment_version`; it no longer emits the deprecated
+hardcoded `client: "1"` for Lakeflow Jobs. A syntactically valid version is not a
+compatibility guarantee: available versions depend on the workspace.
+
+Existing Lakeflow profiles without this setting must be updated before generating
+notebook Jobs. Existing deployed Jobs are not modified automatically. After saving
+the supported version, explicitly create a new reviewed deployment and select that
+new deployment for execution; old deployment snapshots still retain their old
+configuration. Pipeline-only Jobs do not need a notebook environment selection.
+An `Invalid platform channel Client-1` launch failure occurs before notebook code
+executes; changing `migration_reviewed` or SQL does not fix it.
+
+### Serverless environment compatibility (Client-1 fix)
+
+Lakeflow notebook Jobs no longer generate the deprecated `spec.client: "1"`.
+In Lakeflow mappings, set **Serverless environment version** to a numeric version
+supported by the target workspace's Databricks **Environment and Libraries**
+editor. Crosslake emits `spec.environment_version` in both downloaded bundles and
+live deployments and includes the selection in the deployment plan and hash.
+Version availability is workspace-specific; the example version used in local
+fixtures is not a compatibility recommendation for every tenant.
+
+Previously saved mappings have an empty selection until you choose and save a
+version. No default is silently substituted. After upgrading, load the saved run,
+select the environment version, save mappings, preview and deploy new resources.
+An existing Job created with Client-1 is not automatically updated. Select the
+new deployment/Job before running. Keep the old failed run for diagnostics.
+
+This corrects the environment specification; it does not establish that your
+workspace supports every version, or that target SQL and permissions are valid.
+The screenshot error `Invalid platform channel Client-1` occurs before notebook
+execution, so changing SQL or the migration review parameter cannot fix it.

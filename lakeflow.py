@@ -188,12 +188,16 @@ class LakeflowService:
                 mappings.append({'source':item['name'],'task_id':t['id'],'kind':'auto_sql' if 'ExecuteSQLTask' in t['type'] else 'unmapped'})
         if len(mappings)>500:raise ValueError('Lakeflow supports at most 500 tasks per run; split this migration into smaller runs.')
         with self.runs.db() as db:row=db.execute('SELECT * FROM lakeflow_profiles WHERE run_id=?',(run_id,)).fetchone()
-        profile=json.loads(row['body']) if row else {'catalog':'main','schema':'migration','max_retries':0,'min_retry_interval_millis':60000,'schedule':None,'task_mappings':mappings}
+        profile=json.loads(row['body']) if row else {'catalog':'main','schema':'migration','max_retries':0,'min_retry_interval_millis':60000,'schedule':None,'environment_version':'','task_mappings':mappings}
+        profile.setdefault('environment_version','')
         return {'run_id':run_id,'version':row['version'] if row else 0,'profile':profile,'packages':packages,'fingerprint':digest(run),'stale':bool(row and row['fingerprint']!=digest(run))}
 
     def _validate(self,profile):
         if not isinstance(profile,dict):raise ValueError('Supply a Lakeflow profile object.')
         result={'catalog':identifier(profile.get('catalog'),'Catalog'),'schema':identifier(profile.get('schema'),'Schema')}
+        environment=profile.get('environment_version','')
+        if not isinstance(environment,str) or environment and not re.fullmatch(r'[1-9][0-9]{0,2}',environment):raise ValueError('Serverless environment version must be a positive integer string selected from your workspace, for example the version shown in its Environment and Libraries editor.')
+        result['environment_version']=environment
         for name,default,limit in [('max_retries',0,10),('min_retry_interval_millis',60000,86400000)]:
             value=profile.get(name,default)
             if type(value)!=int or not 0<=value<=limit:raise ValueError(name+' is out of range.')
@@ -285,7 +289,11 @@ class LakeflowService:
                 except (ValueError,SyntaxError) as exc:entry['reason']=str(exc);outcome['blockers'].append(task['name']+': '+str(exc))
             if not outcome['blockers']:
                 job={'name':'crosslake_'+resource_key,'max_concurrent_runs':1,'tasks':job_tasks}
-                if any('environment_key' in t for t in job_tasks):job['environments']=[{'environment_key':'default','spec':{'client':'1'}}]
+                if any('environment_key' in t for t in job_tasks):
+                    version=profile.get('environment_version','')
+                    if not version:
+                        outcome['blockers'].append('Select a serverless environment version supported by your Databricks workspace, then save Lakeflow mappings. The legacy Client-1 value is no longer inferred.');continue
+                    job['environments']=[{'environment_key':'default','spec':{'environment_version':version}}]
                 if profile['schedule']:job['schedule']=profile['schedule']
                 jobs[resource_key]=job;outcome['job_resource']=resource_key
         status='partial' if any(o['blockers'] for o in outcomes) and (jobs or pipelines) else 'blocked' if not (jobs or pipelines) else 'review_required'
