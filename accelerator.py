@@ -91,7 +91,7 @@ class Toolkit:
             row=db.execute('SELECT body FROM dependency_mappings WHERE run_id=?',(run_id,)).fetchone()
         return {'references':references,'mappings':json.loads(row[0]) if row else [],'limitations':'Textual inventory; dynamic SQL, database metadata, and project-level bindings require review. Mappings document intent and do not rewrite code. Store secret references only, never credentials.'}
 
-    def package(self,run_id):
+    def package(self,run_id,environment_version=None):
         run=self.runs.get(run_id);conversion=run.get('conversion') or {};files=conversion.get('files',[])
         if not files:raise ValueError('Convert this migration run before packaging.')
         out=[]
@@ -100,9 +100,16 @@ class Toolkit:
             if p.is_absolute() or '..' in p.parts or any(x.startswith('.') for x in p.parts):raise ValueError('Unsafe artifact path.')
             out.append({'name':'artifacts/'+str(p),'sql':f['sql']})
         jobs={}
+        if environment_version is None:
+            with self.runs.db() as db:
+                row=db.execute('SELECT body FROM lakeflow_profiles WHERE run_id=?',(run_id,)).fetchone() if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='lakeflow_profiles'").fetchone() else None
+                environment_version=json.loads(row[0]).get('environment_version','') if row else ''
+        if environment_version and (not isinstance(environment_version,str) or not re.fullmatch(r'[1-9][0-9]{0,2}',environment_version)):raise ValueError('Choose a numeric serverless environment version supported by your workspace.')
         for i,f in enumerate(list(out)):
             if f['name'].endswith('.py') and f['sql'].startswith('# Databricks notebook source'):
-                jobs['notebook_'+str(i+1)]={'name':'migration-'+run_id[:8]+'-'+str(i+1),'tasks':[{'task_key':'reviewed_notebook','notebook_task':{'notebook_path':'${workspace.file_path}/'+f['name'],'source':'WORKSPACE','base_parameters':{'migration_reviewed':'false'}},'environment_key':'default'}],'environments':[{'environment_key':'default','spec':{'client':'1'}}]}
+                if not environment_version:raise ValueError('Choose a workspace-supported serverless environment version in Migration toolkit or save it in Lakeflow mappings before packaging notebook Jobs.')
+                if not environment_version:raise ValueError('Notebook packaging requires a workspace-supported serverless environment version. Set it in Toolkit or save Lakeflow mappings first.')
+                jobs['notebook_'+str(i+1)]={'name':'migration-'+run_id[:8]+'-'+str(i+1),'tasks':[{'task_key':'reviewed_notebook','notebook_task':{'notebook_path':'${workspace.file_path}/'+f['name'].removesuffix('.py'),'source':'WORKSPACE','base_parameters':{'migration_reviewed':'false'}},'environment_key':'default'}],'environments':[{'environment_key':'default','spec':{'environment_version':environment_version}}]}
         if jobs:out.append({'name':'resources/notebooks.json','sql':json.dumps({'resources':{'jobs':jobs}},indent=2)})
         mapping=self.dependencies(run_id)
         manifest={'run_id':run_id,'status':run['status'],'artifacts':[{'path':f['name'],'sha256':hashlib.sha256(f['sql'].encode()).hexdigest()} for f in out],

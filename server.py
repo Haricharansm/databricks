@@ -20,6 +20,7 @@ from lakeflow import LakeflowService
 from insights import InsightsService
 from automation import AutomationService
 from lakeflow_live import LakeflowLive
+from applications import ApplicationService
 
 ROOT = Path(__file__).parent
 
@@ -32,6 +33,7 @@ class AppServer(ThreadingHTTPServer):
         self.toolkit=Toolkit(self.runs,self.databricks)
         self.lakeflow=LakeflowService(self.runs)
         self.insights=InsightsService(self.runs)
+        self.applications=ApplicationService(self.runs,self.lakeflow)
         self.automation=AutomationService(self.runs,self.databricks,packager=self.toolkit.package)
         self.lakeflow_live=LakeflowLive(self.runs,self.databricks,self.lakeflow,self.automation)
     def server_close(self):
@@ -66,6 +68,8 @@ class Handler(SimpleHTTPRequestHandler):
         path=urlsplit(self.path).path
         if path.startswith('/api/') and not self.trusted_api_host():return self.respond(403,{'error':'Untrusted API Host header.'})
         try:
+            application=re.fullmatch(r'/api/applications(?:/([a-f0-9]{32}))?',path)
+            if application:return self.respond(200,self.server.applications.get(application.group(1)) if application.group(1) else self.server.applications.listing())
             automation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/automation(?:/suites/([a-f0-9]{32}))?',path)
             if automation:
                 run_id,suite_id=automation.groups()
@@ -81,7 +85,7 @@ class Handler(SimpleHTTPRequestHandler):
             toolkit=re.fullmatch(r'/api/runs/([a-f0-9]{32})/toolkit/(dependencies|operations|package)',path)
             if toolkit:
                 run_id,action=toolkit.groups()
-                return self.respond(200,getattr(self.server.toolkit,action)(run_id))
+                return self.respond(200,self.server.toolkit.package(run_id,parse_qs(urlsplit(self.path).query).get('environment_version',[None])[0]) if action=='package' else getattr(self.server.toolkit,action)(run_id))
             if path=='/api/databricks/settings':return self.respond(200,self.server.databricks.public())
             if path=='/api/databricks/deploy/latest':return self.respond(200,{'deployment':self.server.deploy.latest()})
             deployment=re.fullmatch(r'/api/databricks/deploy/([a-f0-9]{32})',path)
@@ -106,7 +110,7 @@ class Handler(SimpleHTTPRequestHandler):
         except ValueError as exc:return self.respond(400,{'error':str(exc)})
         if self.path == '/api/health':
             return self.respond(200, engine_status())
-        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/automation.js', '/navigation.js', '/lakeflow-live.js', '/style.css'):
+        if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/monitor.js', '/validation.js', '/databricks.js', '/deploy.js', '/toolkit.js', '/lakeflow.js', '/insights.js', '/automation.js', '/navigation.js', '/lakeflow-live.js', '/applications.js', '/style.css'):
             return self.respond(404, {'error': 'Not found'})
         super().do_GET()
 
@@ -123,6 +127,9 @@ class Handler(SimpleHTTPRequestHandler):
             if not 0 < length <= (24 * 1024 * 1024 if self.path == '/api/export' else MAX_BYTES * 2):
                 return self.respond(413, {'error': 'Request exceeds the upload limit.'})
             payload = json.loads(self.rfile.read(length))
+            if self.path=='/api/applications':return self.respond(201,self.server.applications.create(payload))
+            application=re.fullmatch(r'/api/applications/([a-f0-9]{32})/(save|export)',self.path)
+            if application:return self.respond(200,getattr(self.server.applications,application.group(2))(application.group(1),payload))
             automation=re.fullmatch(r'/api/runs/([a-f0-9]{32})/automation/(baseline|start|cancel|export)',self.path)
             if automation:
                 run_id,action=automation.groups()

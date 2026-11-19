@@ -558,3 +558,77 @@ sources**, assess again, then convert. Existing failed records remain unchanged.
 Do not remove `.data` or stop unrelated Python processes. The Windows process-tree
 and lock handling are covered with simulated Windows tests; real conversion is
 also checked with the locally installed engines on the development host.
+
+## Application migration workspace
+
+**Application workspace** groups up to 20 saved migrations into a business
+application. Add selected runs from Runs & reviews, set recognizable business
+labels and a naming prefix/environment, then review explicit success dependencies.
+The source-to-target architecture register and scheduler register document customer
+intent; they do not rewrite SQL, provision databases or infer execution contracts.
+
+The application view includes normalized repeated-SQL groups with source locations,
+static cross-asset object references, unresolved package references, source review
+status and links to existing per-run execution/validation evidence. Duplicate
+analysis is capped at 1,200 SQL units and reports truncation; per-run inventories
+remain available for deeper review. A match is not proof of semantic equivalence.
+No duplicate is removed and no caller is automatically refactored. Read-only
+extraction candidates are exported for human review only.
+
+A reviewed application handoff contains an architecture/naming report, application
+manifest and source/artifact fingerprints, duplicate analysis, a shared runtime
+logging notebook, and (when ready) child Job/pipeline resources plus a master
+`run_job_task` workflow. Stable resource keys preserve references while business
+labels control display names. Code review gates remain disabled; all schedules are
+paused. CLI bundle validation and explicit sandbox deployment are required. This
+iteration does not live-deploy the application master from Crosslake or certify
+application-wide parity. Individual run live deployment/validation remains available.
+
+Executable release is blocked by unconverted/unapproved sources, unreviewed
+application dependencies/schedules, manual/unresolved architecture decisions,
+unresolved package references, unsupported SQL/procedure-only members, invalid
+Lakeflow mappings or distinct scheduler patterns that cannot safely share a master.
+Blocked exports include reports/planning material, not executable Job resources.
+Run deletion is prevented while the run belongs to an application; remove membership
+and save first. Application saves use optimistic versions and exports reject changed
+member snapshots.
+
+### Reusable logging and positional SQL inputs
+
+Lakeflow mappings can include **shared structured notebook audit logging**. SQL
+notebooks reuse one `_crosslake_runtime` library per package, recording start,
+completion/failure, correlation and run IDs, application/package/task identifiers
+and duration. Only error class names are logged, not exception text, SQL, parameter
+values or credentials. Choose JSON stdout or Python logging; configure a Datadog,
+Splunk or other collector outside Crosslake. This is an integration point, not a
+preconfigured external logging service or a row-level audit system.
+
+Static Execute SQL Input bindings now support explicitly supplied, nonsecret
+package-scope User Int32/Int64/string variables with contiguous zero-based positions.
+Enter values as a JSON object in that task's Lakeflow mapping. Generated widgets
+validate types/ranges; SQL values use named Spark arguments. Recognized engine
+f-string placeholders are converted to bound markers by AST inspection, without
+executing or formatting expressions. Unknown expressions, mismatched placeholders,
+sensitive inputs, output-variable consumers, combined input/result tasks and stored
+procedure calls remain blocked. SQL parameter types and source/target behavior
+still require representative runtime testing.
+
+### Scheduler and packaging consistency
+
+Import scheduler mappings as JSON with member run IDs, original SQL Agent/Windows/
+enterprise references, a user-translated Quartz expression and timezone. Imports
+start unreviewed; explicitly review calendar, DST and dependency semantics before
+export. A single reviewed schedule pattern is assigned to the application master,
+paused. Distinct patterns block a single-master release. No source scheduler is
+modified and no holiday/event-calendar translation is inferred.
+
+Migration toolkit and its CI package exports now use explicit
+`environment_version`, matching Lakeflow. Enter a supported version in Toolkit/CI
+export, or reuse the saved Lakeflow version. Notebook Job packaging without a
+version is blocked; the deprecated Client-1 fallback has been removed.
+
+See [the daily finance application demo](samples/application-finance/README.md)
+for two related packages, repeated SQL, an explicit BusinessDate input, optional
+procedure assessment, logging, scheduler handoff and synthetic golden results.
+These scenarios are tested locally with fixtures and installed conversion engines;
+customer scheduling and live Databricks behavior need tenant-specific testing.

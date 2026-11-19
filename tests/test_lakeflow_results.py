@@ -32,6 +32,21 @@ class BindingTests(unittest.TestCase):
         for f in out['files']:
             if f['name'].endswith('.py'):ast.parse(f['sql']);self.assertIn('migration_reviewed',f['sql'])
         self.assertTrue(all(t['notebook_task']['base_parameters']['migration_reviewed']=='false' for t in job['tasks']))
+    def test_logging_is_one_shared_library_and_count_exit_follows_completion(self):
+        import contextlib,io
+        from runtime_audit import RUNTIME
+        p=self.service.get(self.rid);p['profile'].update(environment_version='4',audit_logging=True);self.service.save(self.rid,{'version':p['version'],'fingerprint':p['fingerprint'],'profile':p['profile']})
+        out=self.bundle();libraries=[f for f in out['files'] if f['name'].endswith('/_crosslake_runtime.py')];self.assertEqual(len(libraries),1)
+        code=next(f['sql'] for f in out['files'] if 'Count_Loaded_Products' in f['name'] and f['name'].endswith('.py'));self.assertEqual(code.count('_audit_context = crosslake_start('),1);self.assertEqual(code.count('%run ./_crosslake_runtime'),1)
+        for cell in code.split('# COMMAND ----------'):ast.parse(cell)
+        widgets={'migration_reviewed':'true'};values={};exits=[]
+        class Frame:
+            columns=['ProductCnt']
+            def take(self,n):return [(4,)]
+        env={'dbutils':SimpleNamespace(widgets=SimpleNamespace(text=lambda k,v:widgets.setdefault(k,v),dropdown=lambda k,v,choices:widgets.setdefault(k,v),get=lambda k:widgets[k]),jobs=SimpleNamespace(taskValues=SimpleNamespace(set=lambda **kw:values.update({kw['key']:kw['value']}))),notebook=SimpleNamespace(exit=exits.append)),'spark':SimpleNamespace(sql=lambda sql:Frame())}
+        exec(RUNTIME,env);stream=io.StringIO()
+        with contextlib.redirect_stdout(stream):exec(code,env)
+        events=[json.loads(line)['event'] for line in stream.getvalue().splitlines() if line.startswith('{')];self.assertEqual(events,['started','completed']);self.assertEqual(json.loads(exits[0])['crosslake_task_values']['ssis_User_ProductCount'],4)
     def test_unsafe_variable_patterns_remain_blocked(self):
         variants=[XML.replace('DTS:Namespace="User"','DTS:Namespace="System"'),XML.replace('DTS:DataType="3"','DTS:DataType="8"'),XML.replace('DTS:IncludeInDebugDump="6789"','DTS:EvaluateAsExpression="True"'),XML.replace('SELECT COUNT(*) AS ProductCnt','SELECT @ProductCount AS ProductCnt'),XML.replace('INSERT INTO dbo.Product','-- User::ProductCount&#xA;INSERT INTO dbo.Product'),XML.replace('DTS:ObjectName="ProductCount"','DTS:ObjectName="Different"'),XML.replace('DTS:IncludeInDebugDump="6789"','DTS:Sensitive="True"')]
         # SQL parameter references are rejected later by static extraction, all other XML references here.

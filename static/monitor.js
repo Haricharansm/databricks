@@ -138,7 +138,7 @@ $('delete-run').onclick=async()=>{
   try{await api('/api/runs/'+selectedId+'/delete',{});if(currentId===selectedId){clearWorkspace();invalidate();renderFiles();}selectedId=null;selectedRun=null;window.dispatchEvent(new CustomEvent('crosslake:run-selected',{detail:null}));if(window.workbench)window.workbench.selectRun(null);lastUpdated='';$('run-detail').hidden=true;offset=0;await refresh();}
   catch(error){$('monitor-error').textContent=error.message;}
 };
-window.monitor={selectedRun:()=>selectedRun,startAssessment,startConversion,clearWorkspace,exportMetadata:()=>selectedRun?{id:selectedRun.id,label:selectedRun.label,status:selectedRun.status,created_at:selectedRun.created_at,updated_at:selectedRun.updated_at,sources:selectedRun.sources,events:selectedRun.events,validation_method:'Manual attestations; no Databricks execution connection.'}:null,canConvert:()=>Boolean(currentId&&selectedRun?.id===currentId&&selectedRun.status==='assessed')};
+window.monitor={openRun,selectedRun:()=>selectedRun,startAssessment,startConversion,clearWorkspace,exportMetadata:()=>selectedRun?{id:selectedRun.id,label:selectedRun.label,status:selectedRun.status,created_at:selectedRun.created_at,updated_at:selectedRun.updated_at,sources:selectedRun.sources,events:selectedRun.events,validation_method:'Manual attestations; no Databricks execution connection.'}:null,canConvert:()=>Boolean(currentId&&selectedRun?.id===currentId&&selectedRun.status==='assessed')};
 (async()=>{await refresh();let id;try{id=localStorage.getItem('crosslake.currentRun');}catch{}if(id)openRun(id).catch(error=>{pointer(null);$('monitor-error').textContent=error.message;});})();
 setInterval(()=>{if(!document.hidden)refresh();},5000);
 })();

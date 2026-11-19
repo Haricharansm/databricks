@@ -13,6 +13,8 @@ from core import mask_sql
 from bladebridge import GUARD
 from monitoring import ACTIVE,Conflict
 from lakeflow_results import result_bindings,output_code
+from lakeflow_parameters import input_bindings,bind_code
+from runtime_audit import RUNTIME,instrument
 
 IDENT=re.compile(r'[A-Za-z_][A-Za-z0-9_]{0,127}')
 NODE=re.compile(r'^#\s*Processing node\s+(.+?),\s*type\s+(\w+)',re.M)
@@ -38,14 +40,20 @@ def digest(run):
     return hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
 
 
-def static_sql(cell):
+def static_sql(cell,input_entries=None):
     """Extract only standalone static SQL assignments/calls, never evaluate Python."""
     tree=ast.parse(cell);values={};queries=[]
     for node in tree.body:
         if isinstance(node,ast.Assign) and len(node.targets)==1 and isinstance(node.targets[0],ast.Name):
             value=node.value
             if isinstance(value,ast.Constant) and isinstance(value.value,str):values[node.targets[0].id]=value.value
-            elif isinstance(value,ast.JoinedStr) and all(isinstance(v,ast.Constant) and isinstance(v.value,str) for v in value.values):values[node.targets[0].id]=''.join(v.value for v in value.values)
+            elif isinstance(value,ast.JoinedStr):
+                parts=[];index=0
+                for part in value.values:
+                    if isinstance(part,ast.Constant) and isinstance(part.value,str):parts.append(part.value)
+                    elif input_entries and isinstance(part,ast.FormattedValue) and isinstance(part.value,ast.Name) and part.conversion==-1 and part.format_spec is None and index<len(input_entries) and part.value.id==input_entries[index]['variable'].split('::',1)[1]:parts.append('?');index+=1
+                    else:raise ValueError('SQL cell contains undeclared or formatted runtime expressions; no expression was evaluated.')
+                values[node.targets[0].id]=''.join(parts)
             else:raise ValueError('SQL cell contains runtime expressions or result assignments.')
         elif isinstance(node,ast.Expr) and isinstance(node.value,ast.Call):
             call=node.value
@@ -61,7 +69,7 @@ def static_sql(cell):
     return queries
 
 
-def task_sql(source,task,artifacts):
+def task_sql(source,task,artifacts,input_entries=None):
     candidates=[a for a in artifacts if a.get('kind')=='notebook' and a['name'].startswith('notebooks/'+package_key(source)+'/') and a['name'].endswith('.py')]
     if len(candidates)!=1:raise ValueError('Convert this package to one Python notebook before extracting SQL tasks.')
     matches=[]
@@ -71,7 +79,7 @@ def task_sql(source,task,artifacts):
             if marker.group(2)!='EXECUTE_SQL':raise ValueError('Converted cell is not an Execute SQL task.')
             matches.append(cell)
     if len(matches)!=1:raise ValueError('Task-to-notebook mapping is absent or ambiguous; no task order was guessed.')
-    return static_sql(matches[0])
+    return static_sql(matches[0],input_entries)
 
 
 def copy_flow(node):
@@ -188,8 +196,8 @@ class LakeflowService:
                 mappings.append({'source':item['name'],'task_id':t['id'],'kind':'auto_sql' if 'ExecuteSQLTask' in t['type'] else 'unmapped'})
         if len(mappings)>500:raise ValueError('Lakeflow supports at most 500 tasks per run; split this migration into smaller runs.')
         with self.runs.db() as db:row=db.execute('SELECT * FROM lakeflow_profiles WHERE run_id=?',(run_id,)).fetchone()
-        profile=json.loads(row['body']) if row else {'catalog':'main','schema':'migration','max_retries':0,'min_retry_interval_millis':60000,'schedule':None,'environment_version':'','task_mappings':mappings}
-        profile.setdefault('environment_version','')
+        profile=json.loads(row['body']) if row else {'catalog':'main','schema':'migration','max_retries':0,'min_retry_interval_millis':60000,'schedule':None,'environment_version':'','audit_logging':False,'audit_sink':'stdout','task_mappings':mappings}
+        profile.setdefault('environment_version','');profile.setdefault('audit_logging',False);profile.setdefault('audit_sink','stdout')
         return {'run_id':run_id,'version':row['version'] if row else 0,'profile':profile,'packages':packages,'fingerprint':digest(run),'stale':bool(row and row['fingerprint']!=digest(run))}
 
     def _validate(self,profile):
@@ -198,6 +206,8 @@ class LakeflowService:
         environment=profile.get('environment_version','')
         if not isinstance(environment,str) or environment and not re.fullmatch(r'[1-9][0-9]{0,2}',environment):raise ValueError('Serverless environment version must be a positive integer string selected from your workspace, for example the version shown in its Environment and Libraries editor.')
         result['environment_version']=environment
+        if type(profile.get('audit_logging',False)) is not bool or profile.get('audit_sink','stdout') not in ('stdout','python_logging'):raise ValueError('Audit logging requires a boolean and stdout/python_logging sink.')
+        result['audit_logging']=profile.get('audit_logging',False);result['audit_sink']=profile.get('audit_sink','stdout')
         for name,default,limit in [('max_retries',0,10),('min_retry_interval_millis',60000,86400000)]:
             value=profile.get(name,default)
             if type(value)!=int or not 0<=value<=limit:raise ValueError(name+' is out of range.')
@@ -212,7 +222,7 @@ class LakeflowService:
         else:result['schedule']=None
         mappings=profile.get('task_mappings')
         if not isinstance(mappings,list) or len(mappings)>500 or any(not isinstance(m,dict) for m in mappings):raise ValueError('Supply at most 500 task mappings.')
-        if any(set(m)-{'source','task_id','kind','pipeline','notebook_path'} for m in mappings):raise ValueError('Task mappings contain unknown fields.')
+        if any(set(m)-{'source','task_id','kind','pipeline','notebook_path','input_values'} for m in mappings):raise ValueError('Task mappings contain unknown fields.')
         if len(json.dumps(mappings))>500000:raise ValueError('Task mappings exceed the 500 KB limit.')
         seen=set()
         for m in mappings:
@@ -248,28 +258,37 @@ class LakeflowService:
             outcome={'source':item['name'],'tasks':[],'blockers':[]};outcomes.append(outcome)
             try:inv,nodes,edges,order=package_graph(item)
             except ValueError as exc:outcome['blockers'].append(str(exc));continue
-            tasks={t['id']:t for t in inv['tasks']};job_tasks=[];resource_key=key(item['name']);outputs=result_bindings(parse_package(item['sql']))
+            tasks={t['id']:t for t in inv['tasks']};job_tasks=[];resource_key=key(item['name']);outputs=result_bindings(parse_package(item['sql']));inputs,_=input_bindings(parse_package(item['sql']));package_inputs={}
             for task_id in order:
                 task=tasks[task_id];m=mapping.get((item['name'],task_id),{});task_key=key(task_id);entry={'task_id':task_id,'name':task['name'],'status':'blocked'};outcome['tasks'].append(entry)
                 try:
                     node=nodes.get(task_id)
                     if node is None:raise ValueError('Task XML cannot be resolved.')
                     kind=m.get('kind')
-                    if task_id in outputs and kind!='auto_sql':raise ValueError('A result-producing task must use auto_sql to preserve its declared task values.')
+                    if m.get('input_values') and task_id not in inputs:raise ValueError('This task has no declared positional input bindings; supplied input values would be ignored.')
+                    if (task_id in outputs or task_id in inputs) and kind!='auto_sql':raise ValueError('A result-producing task must use auto_sql to preserve its declared task values.')
                     job_task={'task_key':task_key,'max_retries':profile['max_retries'],'min_retry_interval_millis':profile['min_retry_interval_millis'],'run_if':'ALL_SUCCESS'}
                     dependencies=[{'task_key':key(start)} for start,end in edges if end==task_id]
                     if dependencies:job_task['depends_on']=dependencies
                     if kind=='auto_sql':
                         if 'ExecuteSQLTask' not in task['type']:raise ValueError('Automatic SQL requires an Execute SQL task.')
                         data=[n for n in node.iter() if local(n.tag)=='SqlTaskData']
-                        if len(data)!=1 or prop(data[0],'SqlStmtSourceType','0') not in ('','0') or prop(data[0],'IsStoredProc','false').lower() in ('true','1') or prop(data[0],'ResultType','ResultSetType_None') not in (('1','ResultSetType_SingleRow') if task_id in outputs else ('','0','ResultSetType_None')) or any(local(n.tag) in (('ParameterBinding',) if task_id in outputs else ('ParameterBinding','ResultBinding')) for n in node.iter()):raise ValueError('SQL files/variables, result sets or parameter bindings require a reviewed notebook.')
-                        queries=task_sql(item['name'],task,artifacts)
+                        if len(data)!=1 or prop(data[0],'SqlStmtSourceType','0') not in ('','0') or prop(data[0],'IsStoredProc','false').lower() in ('true','1') or prop(data[0],'ResultType','ResultSetType_None') not in (('1','ResultSetType_SingleRow') if task_id in outputs else ('','0','ResultSetType_None')) or any(local(n.tag) in (() if task_id in outputs and task_id in inputs else ('ResultBinding',) if task_id in inputs else ('ParameterBinding',) if task_id in outputs else ('ParameterBinding','ResultBinding')) for n in node.iter()):raise ValueError('SQL files/variables, result sets or parameter bindings require a reviewed notebook.')
+                        if re.search(r'\b(?:EXEC|EXECUTE|CALL)\b',mask_sql(prop(data[0],'SqlStatementSource')),re.I):raise ValueError('Stored procedure calls require explicit reviewed notebook orchestration; they are not inferred from a SQL cell.')
+                        queries=task_sql(item['name'],task,artifacts,inputs.get(task_id))
                         namespace='spark.sql('+repr('USE CATALOG `'+profile['catalog']+'`')+')\nspark.sql('+repr('USE SCHEMA `'+profile['schema']+'`')+')\n\n# COMMAND ----------\n'
-                        if task_id in outputs:
+                        parameters={}
+                        if task_id in inputs and task_id in outputs:raise ValueError('Combined input/result bindings need explicit notebook orchestration.')
+                        if task_id in inputs:
+                            body,parameters=bind_code(queries,inputs[task_id],m.get('input_values'));entry['input_bindings']=inputs[task_id]
+                        elif task_id in outputs:
                             body,evidence=output_code(queries,outputs[task_id],task_key);entry['task_values']=evidence
                         else:body='\n'.join('display(spark.sql('+repr(q)+'))' for q in queries)+'\n'
+                        if profile.get('audit_logging'):
+                            body=instrument(namespace,body,item['name'],task['name'],run_id,profile.get('audit_sink','stdout'));namespace=''
+                            parameters.update(crosslake_application_id=run_id,crosslake_job_run_id='{{job.run_id}}')
                         code=GUARD+namespace+body
-                        name='notebooks/'+resource_key+'/'+task_key+'.py';files.append({'name':name,'sql':code});job_task.update(notebook_task={'notebook_path':'${workspace.file_path}/'+name.removesuffix('.py'),'source':'WORKSPACE','base_parameters':{'migration_reviewed':'false'}},environment_key='default')
+                        name='notebooks/'+resource_key+'/'+task_key+'.py';files.append({'name':name,'sql':code});job_task.update(notebook_task={'notebook_path':'${workspace.file_path}/'+name.removesuffix('.py'),'source':'WORKSPACE','base_parameters':{'migration_reviewed':'false',**parameters}},environment_key='default')
                         entry.update(status='generated_review_required',kind=kind,artifact=name)
                     elif kind=='notebook':
                         path=m.get('notebook_path','')
@@ -287,6 +306,8 @@ class LakeflowService:
                     else:raise ValueError('Task has no supported mapping; select auto_sql, pipeline, or an existing notebook.')
                     job_tasks.append(job_task)
                 except (ValueError,SyntaxError) as exc:entry['reason']=str(exc);outcome['blockers'].append(task['name']+': '+str(exc))
+            if profile.get('audit_logging') and any(t.get('kind')=='auto_sql' and t.get('artifact') for t in outcome['tasks']):
+                files.append({'name':'notebooks/'+resource_key+'/_crosslake_runtime.py','sql':RUNTIME,'kind':'runtime_library'})
             if not outcome['blockers']:
                 job={'name':'crosslake_'+resource_key,'max_concurrent_runs':1,'tasks':job_tasks}
                 if any('environment_key' in t for t in job_tasks):

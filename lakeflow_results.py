@@ -2,6 +2,7 @@
 import re
 from ssis import local,prop
 from ci_read_query import read_query
+from lakeflow_parameters import input_bindings
 
 
 def result_bindings(root):
@@ -11,6 +12,7 @@ def result_bindings(root):
     package_variables=[v for container in root if local(container.tag)=='Variables' for v in container if local(v.tag)=='Variable']
     if len(variable_nodes)!=len(package_variables):raise ValueError('Task-scoped variables require explicit notebook orchestration.')
     if len(package_variables)>250:raise ValueError('At most 250 package output variables are supported.')
+    input_plan,input_variables=input_bindings(root)
     declarations={};excluded=set()
     for var in package_variables:
         name=prop(var,'ObjectName');namespace=prop(var,'Namespace');qualified=namespace+'::'+name
@@ -18,7 +20,7 @@ def result_bindings(root):
         if qualified.casefold() in declarations:raise ValueError('Duplicate package variable declaration.')
         if prop(var,'EvaluateAsExpression','').lower() in ('true','1') or prop(var,'Sensitive','').lower() in ('true','1') or prop(var,'ReadOnly','').lower() in ('true','1'):raise ValueError('Expression-based or sensitive variables cannot be exported as task values.')
         values=[n for n in var if local(n.tag)=='VariableValue']
-        if len(values)!=1 or prop(values[0],'DataType') not in ('3','20'):raise ValueError('Single-row outputs currently support SSIS Int32 (3) and Int64 (20) variables only.')
+        if qualified not in input_variables and (len(values)!=1 or prop(values[0],'DataType') not in ('3','20')):raise ValueError('Single-row outputs currently support SSIS Int32 (3) and Int64 (20) variables only.')
         declarations[qualified.casefold()]={'variable':qualified,'data_type':prop(values[0],'DataType'),'guid':prop(var,'DTSID')}
         excluded.update(var.iter())
     plan={};writers=set();binding_nodes=set()
@@ -38,10 +40,10 @@ def result_bindings(root):
             seen_results.add(identity);writers.add(var.casefold());binding_nodes.add(binding)
             outputs.append({k:v for k,v in decl.items() if k!='guid'}|{'result_name':result})
         plan[task_id]=outputs
-    if writers!=set(declarations):raise ValueError('Every package variable must have exactly one single-row result writer; input/default variables and mutable state require explicit orchestration.')
+    if writers!={v for v,d in declarations.items() if d['variable'] not in input_variables}:raise ValueError('Every package variable must have exactly one single-row result writer; input/default variables and mutable state require explicit orchestration.')
     # Reject all other references, even when a writer exists: no downstream reads are guessed.
     for n in root.iter():
-        if n in excluded or n in binding_nodes:continue
+        if n in excluded or n in binding_nodes or local(n.tag)=='ParameterBinding':continue
         content=' '.join([n.text or '',*n.attrib.values()]).casefold()
         for decl in declarations.values():
             if decl['variable'].casefold() in content or decl['guid'] and decl['guid'].casefold() in content:raise ValueError('Variable '+decl['variable']+' is read/referenced outside its result binding; downstream variable consumers require explicit orchestration.')

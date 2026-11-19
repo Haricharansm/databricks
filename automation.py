@@ -145,7 +145,7 @@ CREATE INDEX IF NOT EXISTS golden_suite_run ON golden_suites(run_id,created_at);
         manifest=self.manifest(run_id,payload);files=[]
         if payload.get('include_deployment'):
             if self.packager is None:raise ValueError('Deployment packager is unavailable.')
-            package=self.packager(run_id)
+            package=self.packager(run_id,environment_version=payload['environment_version']) if payload.get('environment_version') else self.packager(run_id)
             enabled=payload.get('enable_reviewed_candidate') is True
             if enabled and any(s['status']!='converted' or s['review']!='approved' for s in self._run(run_id)['sources']):raise Conflict('Approve every converted source before enabling sandbox notebook execution in the CI package.')
             candidates=[]
